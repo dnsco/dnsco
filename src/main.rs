@@ -9,11 +9,14 @@ use tower_web::view::Handlebars;
 mod service;
 
 use service::Webserver;
+use std::env;
+
 
 pub fn main() {
-    let addr = "127.0.0.1:8080".parse().expect("Invalid address");
+    let host = env::var("HOST").unwrap_or("0.0.0.0".to_owned());
+    let port = env::var("PORT").unwrap_or("8080".to_owned());
+    let addr = format!("{}:{}", host, port).parse().expect("Invalid address");
     println!("Listening on http://{}", addr);
-
 
     ServiceBuilder::new()
         .resource(RouteMacro { service: Webserver::new() })
