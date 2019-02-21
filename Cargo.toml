@@ -1,0 +1,11 @@
+[package]
+name = "dnsco"
+version = "0.1.0"
+authors = ["Dennis Collective <dennis.collective@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+serde = "1"
+tokio = "^0.1.15"
+tower-web = "^0.3.4"
+tower-web-macros = "0.3.4"
