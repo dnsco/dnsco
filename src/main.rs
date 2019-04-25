@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate tower_web;
 
-use serde_json;
 use tower_web::view::Handlebars;
 use tower_web::ServiceBuilder;
 
@@ -69,7 +68,7 @@ impl_web! {
         }
 
         #[get("/activities")]
-        fn activities(& self ) -> Result<serde_json::Value, ()> {
+        fn activities(& self ) -> Result<String, &'static str> {
             self.service.activities()
         }
     }

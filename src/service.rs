@@ -1,8 +1,9 @@
-use crate::strava::StravaApi;
+use crate::strava;
+
 #[derive(Clone, Debug)]
 pub struct Webserver {
     events: Vec<Event>,
-    strava_api: StravaApi,
+    strava_api: strava::Api,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -23,7 +24,7 @@ pub struct IndexResponse {
 }
 
 impl Webserver {
-    pub fn new(strava_api: StravaApi) -> Self {
+    pub fn new(strava_api: strava::Api) -> Self {
         Self {
             events: vec![
                 Event {
@@ -52,7 +53,9 @@ impl Webserver {
         })
     }
 
-    pub fn activities(&self) -> Result<serde_json::Value, ()> {
-        self.strava_api.activities()
+    pub fn activities(&self) -> Result<String, &'static str> {
+        self.strava_api.activities().and_then(|activities| {
+            serde_json::to_string(&activities).map_err(|_| "failed to re_serialize")
+        })
     }
 }
