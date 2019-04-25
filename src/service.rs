@@ -1,10 +1,8 @@
-//use tokio::prelude::*;
-use reqwest::header::AUTHORIZATION;
-
+use crate::strava::StravaApi;
 #[derive(Clone, Debug)]
 pub struct Webserver {
     events: Vec<Event>,
-    strava_token: String,
+    strava_api: StravaApi,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -25,7 +23,7 @@ pub struct IndexResponse {
 }
 
 impl Webserver {
-    pub fn new(strava_token: String) -> Self {
+    pub fn new(strava_api: StravaApi) -> Self {
         Self {
             events: vec![
                 Event {
@@ -44,7 +42,7 @@ impl Webserver {
                     info: Race { distance: "26k " },
                 },
             ],
-            strava_token,
+            strava_api,
         }
     }
 
@@ -55,12 +53,6 @@ impl Webserver {
     }
 
     pub fn activities(&self) -> Result<serde_json::Value, ()> {
-        reqwest::Client::new()
-            .get("https://www.strava.com/api/v3/athlete/activities")
-            .header(AUTHORIZATION, format!("Bearer {}", self.strava_token))
-            .send()
-            .map_err(|_| ())?
-            .json()
-            .map_err(|_| ())
+        self.strava_api.activities()
     }
 }

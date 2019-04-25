@@ -1,38 +1,35 @@
 use oauth2::{Config, Token, TokenError};
-use std::env;
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 use url::Url;
 
+#[derive(Debug, Clone)]
 pub struct OauthToken(pub String);
 
 const AUTH_URL: &str = "https://www.strava.com/oauth/authorize";
 const TOKEN_URL: &str = "https://www.strava.com/oauth/token";
 
-pub fn authenticate(redirect_url: &str) -> OauthToken {
-    let token = match env::var("OAUTH_TOKEN") {
-        Ok(t) => t,
-        Err(_) => oauth_dance(redirect_url).unwrap().access_token,
-    };
-
-    OauthToken(token)
+pub struct OauthConfig {
+    pub client_id: String,
+    pub client_secret: String,
+    pub redirect_url: String,
 }
 
-pub fn oauth_dance(redirect_url: &str) -> Result<Token, TokenError> {
-    let strava_client_id =
-        env::var("STRAVA_CLIENT_ID").expect("Missing the STRAVA_CLIENT_ID environment variable.");
-    let strava_client_secret = env::var("STRAVA_CLIENT_SECRET")
-        .expect("Missing the STRAVA_CLIENT_SECRET environment variable.");
-
+pub fn oauth_dance(oauth_config: OauthConfig) -> Result<Token, TokenError> {
     // Set up the config for the Github OAuth2 process.
-    let mut config = Config::new(strava_client_id, strava_client_secret, AUTH_URL, TOKEN_URL);
+    let mut config = Config::new(
+        oauth_config.client_id,
+        oauth_config.client_secret,
+        AUTH_URL,
+        TOKEN_URL,
+    );
 
     // This example is requesting access to the user's public repos and email.
     config = config.add_scope("activity:read_all");
 
     // This example will be running its own server at localhost:8080.
     // See below for the server implementation.
-    config = config.set_redirect_url(redirect_url);
+    config = config.set_redirect_url(oauth_config.redirect_url);
 
     // Set the state parameter (optional)
     // Please upgrade to 2.0, this is deprecated because it reuses the same state for every request
