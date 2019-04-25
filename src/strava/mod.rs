@@ -1,18 +1,20 @@
 use reqwest;
 use reqwest::header::AUTHORIZATION;
 
-mod auth;
-pub use auth::OauthConfig;
-pub fn authenticate(access_token: Option<String>, oauth_config: auth::OauthConfig) -> StravaApi {
-    let oauth_token = auth::OauthToken(
-        access_token.unwrap_or_else(|| auth::oauth_dance(oauth_config).unwrap().access_token),
+mod oauth;
+
+pub use oauth::ClientConfig as OauthConfig;
+
+pub fn authenticate(access_token: Option<String>, oauth_config: oauth::ClientConfig) -> StravaApi {
+    let oauth_token = oauth::OauthToken(
+        access_token.unwrap_or_else(|| oauth::oauth_dance(oauth_config).unwrap().access_token),
     );
     StravaApi { oauth_token }
 }
 
 #[derive(Debug, Clone)]
 pub struct StravaApi {
-    oauth_token: auth::OauthToken,
+    oauth_token: oauth::OauthToken,
 }
 
 impl StravaApi {

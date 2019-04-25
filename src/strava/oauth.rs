@@ -9,13 +9,13 @@ pub struct OauthToken(pub String);
 const AUTH_URL: &str = "https://www.strava.com/oauth/authorize";
 const TOKEN_URL: &str = "https://www.strava.com/oauth/token";
 
-pub struct OauthConfig {
+pub struct ClientConfig {
     pub client_id: String,
     pub client_secret: String,
     pub redirect_url: String,
 }
 
-pub fn oauth_dance(oauth_config: OauthConfig) -> Result<Token, TokenError> {
+pub fn oauth_dance(oauth_config: ClientConfig) -> Result<Token, TokenError> {
     // Set up the config for the Github OAuth2 process.
     let mut config = Config::new(
         oauth_config.client_id,
