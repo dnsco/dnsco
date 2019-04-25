@@ -9,6 +9,7 @@ mod strava;
 
 use service::Webserver;
 use std::env;
+use std::sync::Arc;
 
 pub fn main() {
     let strava_client_id =
@@ -27,7 +28,7 @@ pub fn main() {
 
     println!("Listening on http://{}", addr);
 
-    let token = strava::authenticate(
+    let strava_api = strava::authenticate(
         strava_access_token,
         strava::OauthConfig {
             client_id: strava_client_id,
@@ -40,7 +41,7 @@ pub fn main() {
 
     ServiceBuilder::new()
         .resource(RouteMacro {
-            service: Webserver::new(token),
+            service: Webserver::new(Arc::new(strava_api)),
         })
         .serializer(Handlebars::new())
         .run(&addr)

@@ -1,9 +1,10 @@
 use crate::strava;
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub struct Webserver {
     events: Vec<Event>,
-    strava_api: strava::Api,
+    strava_api: Arc<strava::Api>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -24,7 +25,7 @@ pub struct IndexResponse {
 }
 
 impl Webserver {
-    pub fn new(strava_api: strava::Api) -> Self {
+    pub fn new(strava_api: Arc<strava::Api>) -> Self {
         Self {
             events: vec![
                 Event {

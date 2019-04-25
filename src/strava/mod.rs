@@ -12,7 +12,7 @@ pub fn authenticate(access_token: Option<String>, oauth_config: oauth::ClientCon
     Api { oauth_token }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Api {
     oauth_token: oauth::OauthToken,
 }
