@@ -37,8 +37,6 @@ pub fn main() {
         },
     );
 
-    dbg!(&token);
-
     println!("go to http://localhost:8080/activities");
 
     ServiceBuilder::new()

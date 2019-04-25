@@ -16,7 +16,7 @@ pub struct ClientConfig {
 }
 
 pub fn oauth_dance(oauth_config: ClientConfig) -> Result<Token, TokenError> {
-    // Set up the config for the Github OAuth2 process.
+    // Set up the config for the OAuth2 process.
     let mut config = Config::new(
         oauth_config.client_id,
         oauth_config.client_secret,
@@ -100,8 +100,8 @@ pub fn oauth_dance(oauth_config: ClientConfig) -> Result<Token, TokenError> {
         }
     }
 
-    println!("Github returned the following code:\n{}\n", code);
-    println!("Github returned the following state:\n{}\n", state);
+    println!("Strava returned the following code:\n{}\n", code);
+    println!("Strava returned the following state:\n{}\n", state);
 
     config.exchange_code(code)
 }
