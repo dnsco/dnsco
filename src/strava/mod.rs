@@ -1,11 +1,10 @@
 use reqwest;
 use reqwest::header::AUTHORIZATION;
 use serde::{Deserialize, Serialize};
-
+use std::fmt;
 mod oauth;
 
 pub use oauth::ClientConfig as OauthConfig;
-use std::io::Read;
 
 pub fn authenticate(access_token: Option<String>, oauth_config: oauth::ClientConfig) -> Api {
     let oauth_token = oauth::OauthToken(
@@ -19,32 +18,59 @@ pub struct Api {
     oauth_token: oauth::OauthToken,
 }
 
+const ACTIVITIES_URL: &'static str = "https://www.strava.com/api/v3/athlete/activities";
+
 impl Api {
-    pub fn activities(&self) -> Result<Vec<Activity>, &'static str> {
+    pub fn activities(&self) -> Result<Vec<Activity>, StravaError> {
         let mut response = self.activities_response()?;
+
         if response.status().is_success() {
-            return response.json().map_err(|_| "Failed to Parse Json");
-        } else {
-            dbg!(&response);
-            dbg!(response
-                .text()
-                .map_err(|_| "Failed to read http response body")?);
-            return Err("Unsusessful response");
+            if let Ok(activities) = response.json() {
+                return Ok(activities);
+            }
         }
+
+        return Err(Api::parse_error(&mut response));
     }
 
-    fn activities_response(&self) -> Result<reqwest::Response, &'static str> {
+    fn parse_error(mut response: &mut reqwest::Response) -> StravaError {
+        StravaError::ApiError(response.json().unwrap_or_else(|_| {
+            let message = match response.text() {
+                Ok(resp) => format!("Strava Api Returned: {}", resp),
+                Err(_) => "Failed to read http response".to_owned(),
+            };
+
+            ErrorResponse {
+                errors: Vec::new(),
+                message,
+            }
+        }))
+    }
+
+    fn activities_response(&self) -> Result<reqwest::Response, StravaError> {
         reqwest::Client::new()
-            .get("https://www.strava.com/api/v3/athlete/activities")
+            .get(ACTIVITIES_URL)
             .header(AUTHORIZATION, format!("Bearer {}", self.oauth_token.0))
             .send()
-            .map_err(|_| "Strava Network Error")
+            .map_err(|e| StravaError::NetworkError(Box::new(e)))
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug)]
+pub enum StravaError {
+    ApiError(ErrorResponse),
+    NetworkError(Box<std::error::Error>),
+}
+
+impl fmt::Display for StravaError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ErrorResponse {
-    errors: serde_json::Value,
+    errors: Vec<serde_json::Value>,
     message: String,
 }
 

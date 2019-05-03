@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpServer, Responder, ResponseError};
+use actix_web::{web, App, HttpServer, Responder};
 
 mod service;
 mod strava;
@@ -52,7 +52,10 @@ struct TemplateResponse {
 }
 
 fn activities(service: web::Data<Webserver>) -> impl Responder {
-    service
-        .activities()
-        .map_err(|e| actix_web::error::ErrorExpectationFailed(e))
+    service.activities().map_err(log_and_convert_error)
+}
+
+fn log_and_convert_error(error: String) -> actix_web::Error {
+    dbg!(error);
+    actix_web::error::ErrorExpectationFailed("Something went wrong")
 }

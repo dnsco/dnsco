@@ -55,9 +55,14 @@ impl Webserver {
         })
     }
 
-    pub fn activities(&self) -> Result<String, &'static str> {
-        self.strava_api.activities().and_then(|activities| {
-            serde_json::to_string(&activities).map_err(|_| "failed to re_serialize")
-        })
+    pub fn activities(&self) -> Result<String, String> {
+        match self.strava_api.activities() {
+            Ok(activities) => serde_json::to_string(&activities).map_err(reserialization_failure),
+            Err(error) => Err(error.to_string()),
+        }
     }
+}
+
+fn reserialization_failure(_: serde_json::Error) -> String {
+    "Failed to Reserialize".to_owned()
 }
