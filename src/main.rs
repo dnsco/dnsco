@@ -1,14 +1,10 @@
-#[macro_use]
-extern crate tower_web;
-
-use tower_web::view::Handlebars;
-use tower_web::ServiceBuilder;
+use actix_web::{web, App, HttpServer, Responder, ResponseError};
 
 mod service;
 mod strava;
-
 use service::Webserver;
 use std::env;
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 pub fn main() {
@@ -22,55 +18,41 @@ pub fn main() {
 
     let host = env::var("HOST").unwrap_or("0.0.0.0".to_owned());
     let port = env::var("PORT").unwrap_or("8080".to_owned());
-    let addr = format!("{}:{}", host, port)
+    let addr: SocketAddr = format!("{}:{}", host, port)
         .parse()
         .expect("Invalid address");
 
     println!("Listening on http://{}", addr);
 
-    let strava_api = strava::authenticate(
+    let strava_api = Arc::new(strava::authenticate(
         strava_access_token,
         strava::OauthConfig {
             client_id: strava_client_id,
             client_secret: strava_client_secret,
             redirect_url: strava_oauth_redirct_url,
         },
-    );
+    ));
 
     println!("go to http://localhost:8080/activities");
 
-    ServiceBuilder::new()
-        .resource(RouteMacro {
-            service: Webserver::new(Arc::new(strava_api)),
-        })
-        .serializer(Handlebars::new())
-        .run(&addr)
-        .unwrap();
+    HttpServer::new(move || {
+        App::new()
+            .data(Webserver::new(strava_api.clone()))
+            .service(web::resource("/activities").to(activities))
+    })
+    .bind(addr)
+    .unwrap()
+    .run()
+    .unwrap()
 }
 
-#[derive(Clone, Debug)]
-pub struct RouteMacro {
-    service: Webserver,
-}
-
-#[derive(Response, Debug)]
+#[derive(Debug)]
 struct TemplateResponse {
     page: service::IndexResponse,
 }
 
-impl_web! {
-    impl RouteMacro {
-        #[get("/")]
-        #[content_type("html")]
-        #[web(template = "index")]
-        fn hello_world( & self ) -> Result<TemplateResponse, ()> {
-            let page = self.service.hello_world().unwrap();
-            Ok(TemplateResponse { page })
-        }
-
-        #[get("/activities")]
-        fn activities(& self ) -> Result<String, &'static str> {
-            self.service.activities()
-        }
-    }
+fn activities(service: web::Data<Webserver>) -> impl Responder {
+    service
+        .activities()
+        .map_err(|e| actix_web::error::ErrorExpectationFailed(e))
 }

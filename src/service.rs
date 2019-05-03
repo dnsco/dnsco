@@ -1,4 +1,5 @@
 use crate::strava;
+use serde::Serialize;
 use std::sync::Arc;
 
 #[derive(Clone, Debug)]
