@@ -1,6 +1,10 @@
-use oauth2::{Config, Token, TokenError};
-use std::io::{BufRead, BufReader, Write};
-use std::net::TcpListener;
+use failure::Fail;
+use oauth2::basic::{BasicClient, BasicTokenType};
+use oauth2::prelude::{NewType, SecretNewType};
+use oauth2::{
+    AccessToken, AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
+    RedirectUrl, RefreshToken, Scope, TokenResponse, TokenUrl,
+};
 use url::Url;
 
 use serde::Deserialize;
@@ -20,12 +24,12 @@ pub struct ClientConfig {
 
 pub fn get_authorization_url(oauth_config: &ClientConfig) -> Url {
     let mut client = oauth2_client(oauth_config);
-    client = client.add_scope("activity:read_all");
-    client = client.set_redirect_url(oauth_config.redirect_url.to_string());
+    let redirect_url = RedirectUrl::new(oauth_config.redirect_url.clone());
+    let scope = Scope::new("activity:read_all".to_owned());
 
-    #[allow(deprecated)]
-    let config = client.set_state("1917");
-    config.authorize_url()
+    client = client.add_scope(scope);
+    client = client.set_redirect_url(redirect_url);
+    client.authorize_url(CsrfToken::new_random).0
 }
 
 #[derive(Deserialize, Debug)]
@@ -35,21 +39,28 @@ pub struct RedirectQuery {
     scope: String,
 }
 
-pub fn redirect_callback(query: &RedirectQuery, config: &ClientConfig) -> String {
-    let code = query.code.clone();
-    let client = oauth2_client(&config);
-    if let Ok(code) = client.exchange_code(code) {
-        return format!("{:?}", code);
-    }
+#[derive(Debug)]
+pub struct AccessTokenResponse(AccessToken, RefreshToken);
 
-    return "Nope".to_owned();
+pub fn redirect_callback(
+    query: &RedirectQuery,
+    config: &ClientConfig,
+) -> Result<AccessTokenResponse, impl Fail> {
+    let code = AuthorizationCode::new(query.code.clone());
+    oauth2_client(&config).exchange_code(code).and_then(|resp| {
+        Ok(AccessTokenResponse(
+            resp.access_token().clone(),
+            resp.refresh_token().unwrap().clone(),
+        ))
+    })
 }
 
-fn oauth2_client(oauth_config: &ClientConfig) -> Config {
-    Config::new(
-        oauth_config.client_id.clone(),
-        oauth_config.client_secret.clone(),
-        AUTH_URL,
-        TOKEN_URL,
-    )
+fn oauth2_client(oauth_config: &ClientConfig) -> BasicClient {
+    let client_id = ClientId::new(oauth_config.client_id.clone());
+    let client_secret = ClientSecret::new(oauth_config.client_secret.clone());
+    let auth_url = AuthUrl::new(Url::parse(AUTH_URL).expect("Invalid AuthUrl"));
+    let token_url = TokenUrl::new(Url::parse(TOKEN_URL).expect("Invalid TokenUrl"));
+
+    BasicClient::new(client_id, Some(client_secret), auth_url, Some(token_url))
+        .set_auth_type(AuthType::RequestBody)
 }

@@ -2,6 +2,7 @@ use actix_web::{web, App, HttpServer, Responder};
 
 mod service;
 mod strava;
+use oauth2::TokenResponse;
 use service::Webserver;
 use std::env;
 use std::sync::Arc;
@@ -68,7 +69,10 @@ fn oauth(
     oauth_resp: web::Query<OauthRedirectQuery>,
     service: web::Data<Webserver>,
 ) -> impl Responder {
-    strava::oauth_redirect_callback(&oauth_resp, &service.oauth_config)
+    format!(
+        "{:?}",
+        strava::oauth_redirect_callback(&oauth_resp, &service.oauth_config)
+    )
 }
 
 fn log_and_convert_error(error: String) -> actix_web::Error {
