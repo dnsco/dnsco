@@ -6,6 +6,7 @@ use std::sync::Arc;
 pub struct Webserver {
     events: Vec<Event>,
     strava_api: Arc<strava::Api>,
+    pub oauth_config: strava::OauthConfig,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -26,7 +27,7 @@ pub struct IndexResponse {
 }
 
 impl Webserver {
-    pub fn new(strava_api: Arc<strava::Api>) -> Self {
+    pub fn new(strava_api: Arc<strava::Api>, oauth_config: strava::OauthConfig) -> Self {
         Self {
             events: vec![
                 Event {
@@ -46,6 +47,7 @@ impl Webserver {
                 },
             ],
             strava_api,
+            oauth_config,
         }
     }
 
