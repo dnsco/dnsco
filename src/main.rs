@@ -64,19 +64,18 @@ fn index(service: web::Data<Webserver>) -> impl Responder {
 }
 
 fn activities(service: web::Data<Webserver>) -> HttpResponse {
-    if let Ok(api) = service.get_strava_api() {
-        match service.activities(&api) {
-            Ok(activities) => HttpResponse::Ok().body(activities),
-            Err(err) => log_and_convert_error(err),
-        }
-    } else {
-        HttpResponse::Found()
+    match service.activities() {
+        Ok(activities) => HttpResponse::Ok().body(activities),
+        Err(strava::Error::NoOauthToken) => HttpResponse::Found()
             .header(
                 http::header::LOCATION,
                 service.oauth_redirect_url().to_string(),
             )
-            .finish()
-            .into_body()
+            .finish(),
+        Err(e) => {
+            dbg!(e);
+            HttpResponse::InternalServerError().body("nope")
+        }
     }
 }
 
@@ -84,18 +83,13 @@ fn oauth(
     oauth_resp: web::Query<strava::oauth::RedirectQuery>,
     service: web::Data<Webserver>,
 ) -> impl Responder {
-    if let Ok(resp) = service.update_oauth_token(&oauth_resp) {
+    if let Ok(_) = service.update_oauth_token(&oauth_resp) {
         HttpResponse::Found()
             .header(http::header::LOCATION, "/activities")
             .finish()
     } else {
         HttpResponse::InternalServerError().body("Sadness")
     }
-}
-
-fn log_and_convert_error(error: String) -> HttpResponse {
-    dbg!(error);
-    HttpResponse::InternalServerError().body("nope")
 }
 
 fn into_response<T: askama::Template>(template: T) -> Result<HttpResponse, actix_web::Error> {

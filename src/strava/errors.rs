@@ -16,4 +16,7 @@ pub enum Error {
 
     #[fail(display = "Oauth Failure")]
     OauthAuthorizationError(#[fail(cause)] RequestTokenError<BasicErrorResponseType>),
+
+    #[fail(display = "Failed to De/Serialize Strava Response")]
+    Parse(#[fail(cause)] serde_json::Error),
 }
