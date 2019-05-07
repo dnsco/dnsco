@@ -1,4 +1,3 @@
-use crate::strava;
 use strava::oauth;
 use strava::oauth::OauthToken;
 

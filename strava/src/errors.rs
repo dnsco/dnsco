@@ -1,8 +1,9 @@
-use crate::strava::models;
 use failure::Fail;
 use oauth2::basic::BasicErrorResponseType;
 use oauth2::RequestTokenError;
 use url::Url;
+
+use crate::models;
 
 #[derive(Debug, Fail)]
 pub enum Error {

@@ -1,10 +1,10 @@
-use crate::strava::errors::Error as StravaError;
-use crate::strava::models::Activity;
-use crate::strava::oauth::OauthToken;
-
 use failure::Fail;
 use reqwest;
 use reqwest::header::AUTHORIZATION;
+
+use crate::errors::Error as StravaError;
+use crate::models::Activity;
+use crate::oauth::OauthToken;
 
 const ACTIVITIES_URL: &str = "https://www.strava.com/api/v3/athlete/activities";
 

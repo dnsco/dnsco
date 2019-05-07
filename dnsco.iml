@@ -7,6 +7,11 @@
       <sourceFolder url="file://$MODULE_DIR$/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/strava/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/strava/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/strava/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/strava/benches" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/strava/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

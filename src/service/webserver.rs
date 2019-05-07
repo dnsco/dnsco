@@ -1,4 +1,4 @@
-use crate::{config, service, strava, templates};
+use crate::{config, service, templates};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use service::models::{Event, Race};

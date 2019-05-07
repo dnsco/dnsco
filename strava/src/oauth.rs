@@ -8,7 +8,7 @@ use url::Url;
 
 use serde::Deserialize;
 
-use crate::strava::errors::Error as StravaError;
+use crate::Error as StravaError;
 
 #[derive(Debug, Clone)]
 pub struct OauthToken(pub String);

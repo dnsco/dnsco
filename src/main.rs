@@ -1,13 +1,15 @@
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder, ResponseError};
+use failure::Fail;
 use std::env;
 use std::sync::{Arc, Mutex};
+
+use strava;
 
 use service::Webserver;
 
 mod config;
 mod service;
-mod strava;
 mod templates;
 
 pub fn main() {
@@ -64,16 +66,18 @@ fn index(service: web::Data<Webserver>) -> impl Responder {
     into_response(service.hello_world())
 }
 
-fn activities(service: web::Data<Webserver>) -> Result<HttpResponse, strava::Error> {
-    let activities = service.activities()?;
+fn activities(service: web::Data<Webserver>) -> Result<HttpResponse, AppError> {
+    let activities = service.activities().map_err(AppError::StravaError)?;
     Ok(HttpResponse::Ok().body(activities))
 }
 
 fn oauth(
     oauth_resp: web::Query<strava::oauth::RedirectQuery>,
     service: web::Data<Webserver>,
-) -> Result<HttpResponse, strava::Error> {
-    service.update_oauth_token(&oauth_resp)?;
+) -> Result<HttpResponse, AppError> {
+    service
+        .update_oauth_token(&oauth_resp)
+        .map_err(AppError::StravaError)?;
     Ok(HttpResponse::Found()
         .header(http::header::LOCATION, "/activities")
         .finish())
@@ -87,16 +91,24 @@ fn into_response<T: askama::Template>(template: T) -> Result<HttpResponse, actix
     Ok(HttpResponse::Ok().content_type("text/html").body(rsp))
 }
 
-impl ResponseError for strava::Error {
+impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            strava::Error::NoOauthToken(redirect_url) => HttpResponse::Found()
-                .header(http::header::LOCATION, redirect_url.to_string())
-                .finish(),
+            AppError::StravaError(strava::Error::NoOauthToken(redirect_url)) => {
+                HttpResponse::Found()
+                    .header(http::header::LOCATION, redirect_url.to_string())
+                    .finish()
+            }
             e => {
                 dbg!(e);
                 HttpResponse::InternalServerError().body("Something Went Wrong")
             }
         }
     }
+}
+
+#[derive(Debug, Fail)]
+pub enum AppError {
+    #[fail(display = "Strava Api Returned Error: {:?}", _0)]
+    StravaError(#[fail(cause)] strava::Error),
 }
