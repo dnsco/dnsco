@@ -9,7 +9,7 @@ pub struct StravaApi {
 
 impl StravaApi {
     pub fn new(access_token: Option<String>, oauth_config: oauth::ClientConfig) -> Self {
-        let oauth_token = access_token.map(|token| OauthToken(token));
+        let oauth_token = access_token.map(OauthToken);
         Self {
             oauth_config,
             oauth_token,

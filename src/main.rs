@@ -11,7 +11,7 @@ mod strava;
 mod templates;
 
 pub fn main() {
-    let log_level = env::var("LOG_LEVEL").unwrap_or("INFO".to_owned());
+    let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "INFO".to_owned());
     let rust_log = env::var("RUST_LOG").unwrap_or(log_level);
     env::set_var("RUST_LOG", rust_log);
     env_logger::init();
@@ -23,12 +23,12 @@ pub fn main() {
     let strava_access_token = env::var("STRAVA_OAUTH_TOKEN").ok();
 
     let port = env::var("PORT")
-        .unwrap_or("8080".to_owned())
+        .unwrap_or_else(|_| "8080".to_owned())
         .parse::<u16>()
         .ok();
 
     // localhost in host for urls/oauth callbacks, listent to 0.0.0.0 for production
-    let host = env::var("HOST").unwrap_or(format!("localhost:{}", port.unwrap()));
+    let host = env::var("HOST").unwrap_or_else(|_| format!("localhost:{}", port.unwrap()));
     let server_listen = format!("0.0.0.0:{}", port.unwrap());
 
     let urls = config::SiteUrls::new(host);

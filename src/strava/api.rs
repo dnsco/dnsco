@@ -6,7 +6,7 @@ use failure::Fail;
 use reqwest;
 use reqwest::header::AUTHORIZATION;
 
-const ACTIVITIES_URL: &'static str = "https://www.strava.com/api/v3/athlete/activities";
+const ACTIVITIES_URL: &str = "https://www.strava.com/api/v3/athlete/activities";
 
 #[derive(Debug)]
 pub struct Api {
@@ -27,7 +27,7 @@ impl Api {
             }
         }
 
-        return Err(Api::parse_error(&mut response));
+        Err(Api::parse_error(&mut response))
     }
 
     fn parse_error(response: &mut reqwest::Response) -> StravaError {
