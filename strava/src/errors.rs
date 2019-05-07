@@ -13,7 +13,7 @@ pub enum Error {
     #[fail(display = "Network Error: {:?}", _0)]
     NetworkError(#[fail(cause)] Box<failure::Fail>),
 
-    #[fail(display = "No Strava Creds")]
+    #[fail(display = "Not logged in to Strava")]
     NoOauthToken(Url),
 
     #[fail(display = "Oauth Failure")]
