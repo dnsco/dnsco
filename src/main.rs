@@ -21,13 +21,16 @@ pub fn main() {
         .expect("Missing the STRAVA_CLIENT_SECRET environment variable.");
     let strava_access_token = env::var("STRAVA_OAUTH_TOKEN").ok();
 
-    let host = env::var("HOST").unwrap_or("localhost".to_owned());
     let port = env::var("PORT")
         .unwrap_or("8080".to_owned())
         .parse::<u16>()
         .ok();
 
-    let urls = SiteUrls::new(host, port);
+    // localhost in host for urls/oauth callbacks, listent to 0.0.0.0 for production
+    let host = env::var("HOST").unwrap_or(format!("localhost:{}", port.unwrap()));
+    let server_listen = format!("0.0.0.0:{}", port.unwrap());
+
+    let urls = SiteUrls::new(host);
 
     let strava_api = Arc::new(Mutex::new(strava::AuthedApi::new(
         strava_access_token,
@@ -50,7 +53,7 @@ pub fn main() {
             .service(web::resource(urls.activities().path()).to(activities))
             .service(web::resource(urls.oauth_redirect().path()).to(oauth))
     })
-    .bind(format!("0.0.0.0:{}", port.unwrap()))
+    .bind(server_listen)
     .unwrap()
     .run()
     .unwrap()
@@ -111,12 +114,12 @@ pub struct SiteUrls {
 }
 
 impl SiteUrls {
-    pub fn new(host: String, port: Option<u16>) -> Self {
+    pub fn new(host: String) -> Self {
         let host_with_scheme = format!("http://{}", host);
-        let mut base = url::Url::parse(&host_with_scheme).unwrap();
-        base.set_port(port).unwrap();
 
-        Self { base }
+        Self {
+            base: url::Url::parse(&host_with_scheme).unwrap(),
+        }
     }
 
     pub fn activities(&self) -> Url {
