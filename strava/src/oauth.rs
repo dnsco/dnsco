@@ -8,7 +8,7 @@ use url::Url;
 
 use serde::Deserialize;
 
-use crate::Error as StravaError;
+use crate::Error;
 
 #[derive(Debug, Clone)]
 pub struct OauthToken(pub String);
@@ -55,14 +55,14 @@ impl AccessTokenResponse {
 pub fn redirect_callback(
     query: &RedirectQuery,
     config: &ClientConfig,
-) -> Result<AccessTokenResponse, StravaError> {
+) -> Result<AccessTokenResponse, Error> {
     let code = AuthorizationCode::new(query.code.clone());
     match oauth2_client(&config).exchange_code(code) {
         Ok(resp) => Ok(AccessTokenResponse(
             resp.access_token().clone(),
             resp.refresh_token().unwrap().clone(),
         )),
-        Err(e) => Err(StravaError::OauthAuthorizationError(e)),
+        Err(e) => Err(Error::OauthAuthorizationError(e)),
     }
 }
 
