@@ -21,7 +21,7 @@ pub fn main() {
         .expect("Missing the STRAVA_CLIENT_SECRET environment variable.");
     let strava_access_token = env::var("STRAVA_OAUTH_TOKEN").ok();
 
-    let host = env::var("HOST").unwrap_or("0.0.0.0".to_owned());
+    let host = env::var("HOST").unwrap_or("localhost".to_owned());
     let port = env::var("PORT")
         .unwrap_or("8080".to_owned())
         .parse::<u16>()
@@ -50,7 +50,7 @@ pub fn main() {
             .service(web::resource(urls.activities().path()).to(activities))
             .service(web::resource(urls.oauth_redirect().path()).to(oauth))
     })
-    .bind(server_url)
+    .bind(format!("0.0.0.0:{}", port.unwrap()))
     .unwrap()
     .run()
     .unwrap()
