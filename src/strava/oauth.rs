@@ -1,5 +1,5 @@
 use failure::Fail;
-use oauth2::basic::{BasicClient, BasicTokenType};
+use oauth2::basic::BasicClient;
 use oauth2::prelude::{NewType, SecretNewType};
 use oauth2::{
     AccessToken, AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
@@ -41,6 +41,15 @@ pub struct RedirectQuery {
 
 #[derive(Debug)]
 pub struct AccessTokenResponse(pub AccessToken, RefreshToken);
+impl AccessTokenResponse {
+    pub fn oauth_token(&self) -> String {
+        self.0.secret().clone()
+    }
+
+    pub fn refresh_token(&self) -> String {
+        self.1.secret().clone()
+    }
+}
 
 pub fn redirect_callback(
     query: &RedirectQuery,

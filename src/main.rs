@@ -1,11 +1,11 @@
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use std::env;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use oauth2::prelude::*;
 use service::Webserver;
-use strava::OauthRedirectQuery;
+use strava::oauth::RedirectQuery as OauthQuery;
 
 mod service;
 mod strava;
@@ -33,23 +33,23 @@ pub fn main() {
     let activities_url = url.join("/activities").unwrap();
     let oauth_redirect_url = url.join("/oauth").unwrap();
 
-    let oauth_config = strava::OauthConfig {
+    let oauth_config = strava::oauth::ClientConfig {
         client_id: strava_client_id,
         client_secret: strava_client_secret,
         redirect_url: oauth_redirect_url.clone(),
     };
 
-    let strava_api = Arc::new(strava::AuthedApi::new(
+    let strava_api = Arc::new(Mutex::new(strava::AuthedApi::new(
         strava_access_token,
         oauth_config.clone(),
-    ));
+    )));
 
     println!("go to: {}", activities_url);
 
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .data(Webserver::new(strava_api.clone(), oauth_config.clone()))
+            .data(Webserver::new(strava_api.clone()))
             .service(web::resource(activities_url.path()).to(activities))
             .service(web::resource(oauth_redirect_url.path()).to(oauth))
     })
@@ -65,30 +65,31 @@ struct TemplateResponse {
 }
 
 fn activities(service: web::Data<Webserver>) -> HttpResponse {
-    if let Ok(api) = service.strava_api.api() {
+    let strava = service.strava_api.lock().unwrap();
+    if let Ok(api) = strava.api() {
         match service.activities(&api) {
             Ok(activities) => HttpResponse::Ok().body(activities),
             Err(err) => log_and_convert_error(err),
         }
     } else {
         HttpResponse::Found()
-            .header(
-                http::header::LOCATION,
-                service.strava_api.auth_url().to_string(),
-            )
+            .header(http::header::LOCATION, strava.auth_url().to_string())
             .finish()
             .into_body()
     }
 }
 
-fn oauth(
-    oauth_resp: web::Query<OauthRedirectQuery>,
-    service: web::Data<Webserver>,
-) -> impl Responder {
-    if let Ok(resp) = strava::oauth_redirect_callback(&oauth_resp, &service.oauth_config) {
-        format!("STRAVA_OAUTH_TOKEN={}", resp.0.secret())
+fn oauth(oauth_resp: web::Query<OauthQuery>, service: web::Data<Webserver>) -> impl Responder {
+    let mut strava = service.strava_api.lock().unwrap();
+
+    if let Ok(resp) = strava.parsed_oauth_response(&oauth_resp) {
+        strava.set_tokens(&resp);
+
+        HttpResponse::Found()
+            .header(http::header::LOCATION, "/activities")
+            .finish()
     } else {
-        "Somthing Sad".to_string()
+        HttpResponse::InternalServerError().body("Sadness")
     }
 }
 

@@ -1,17 +1,15 @@
 use url::Url;
 
+use failure::Fail;
 use oauth::OauthToken;
-
-pub use api::Api;
-pub use oauth::{
-    redirect_callback as oauth_redirect_callback, ClientConfig as OauthConfig,
-    RedirectQuery as OauthRedirectQuery,
-};
 
 mod api;
 mod errors;
 mod models;
-mod oauth;
+pub mod oauth;
+
+pub use api::Api;
+pub use errors::Error;
 
 #[derive(Debug)]
 pub struct AuthedApi {
@@ -28,6 +26,10 @@ impl AuthedApi {
         }
     }
 
+    pub fn set_tokens(&mut self, resp: &oauth::AccessTokenResponse) {
+        self.oauth_token = Some(OauthToken(resp.oauth_token()));
+    }
+
     pub fn api(&self) -> Result<Api, errors::Error> {
         match &self.oauth_token {
             Some(token) => Ok(Api::new(token.clone())),
@@ -37,5 +39,12 @@ impl AuthedApi {
 
     pub fn auth_url(&self) -> Url {
         oauth::get_authorization_url(&self.oauth_config)
+    }
+
+    pub fn parsed_oauth_response(
+        &self,
+        oauth_resp: &oauth::RedirectQuery,
+    ) -> Result<oauth::AccessTokenResponse, impl Fail> {
+        oauth::redirect_callback(&oauth_resp, &self.oauth_config)
     }
 }

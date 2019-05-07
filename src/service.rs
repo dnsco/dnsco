@@ -1,12 +1,12 @@
 use crate::strava;
+
 use serde::Serialize;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug)]
 pub struct Webserver {
     events: Vec<Event>,
-    pub strava_api: Arc<strava::AuthedApi>,
-    pub oauth_config: strava::OauthConfig,
+    pub strava_api: Arc<Mutex<strava::AuthedApi>>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -27,7 +27,7 @@ pub struct IndexResponse {
 }
 
 impl Webserver {
-    pub fn new(strava_api: Arc<strava::AuthedApi>, oauth_config: strava::OauthConfig) -> Self {
+    pub fn new(strava_api: Arc<Mutex<strava::AuthedApi>>) -> Self {
         Self {
             events: vec![
                 Event {
@@ -47,7 +47,6 @@ impl Webserver {
                 },
             ],
             strava_api,
-            oauth_config,
         }
     }
 
