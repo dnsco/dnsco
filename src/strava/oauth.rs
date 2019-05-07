@@ -40,7 +40,7 @@ pub struct RedirectQuery {
 }
 
 #[derive(Debug)]
-pub struct AccessTokenResponse(AccessToken, RefreshToken);
+pub struct AccessTokenResponse(pub AccessToken, RefreshToken);
 
 pub fn redirect_callback(
     query: &RedirectQuery,

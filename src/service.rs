@@ -5,7 +5,7 @@ use std::sync::Arc;
 #[derive(Clone, Debug)]
 pub struct Webserver {
     events: Vec<Event>,
-    strava_api: Arc<strava::Api>,
+    pub strava_api: Arc<strava::AuthedApi>,
     pub oauth_config: strava::OauthConfig,
 }
 
@@ -27,7 +27,7 @@ pub struct IndexResponse {
 }
 
 impl Webserver {
-    pub fn new(strava_api: Arc<strava::Api>, oauth_config: strava::OauthConfig) -> Self {
+    pub fn new(strava_api: Arc<strava::AuthedApi>, oauth_config: strava::OauthConfig) -> Self {
         Self {
             events: vec![
                 Event {
@@ -57,8 +57,8 @@ impl Webserver {
         })
     }
 
-    pub fn activities(&self) -> Result<String, String> {
-        match self.strava_api.activities() {
+    pub fn activities(&self, api: &strava::Api) -> Result<String, String> {
+        match api.activities() {
             Ok(activities) => serde_json::to_string(&activities).map_err(reserialization_failure),
             Err(error) => Err(error.to_string()),
         }

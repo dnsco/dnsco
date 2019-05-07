@@ -1,12 +1,14 @@
-use actix_web::{web, App, HttpServer, Responder};
+use actix_web::middleware::Logger;
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use std::env;
+use std::sync::Arc;
+
+use oauth2::prelude::*;
+use service::Webserver;
+use strava::OauthRedirectQuery;
 
 mod service;
 mod strava;
-use oauth2::TokenResponse;
-use service::Webserver;
-use std::env;
-use std::sync::Arc;
-use strava::OauthRedirectQuery;
 
 pub fn main() {
     let strava_client_id =
@@ -37,7 +39,7 @@ pub fn main() {
         redirect_url: oauth_redirect_url.clone(),
     };
 
-    let strava_api = Arc::new(strava::authenticate(
+    let strava_api = Arc::new(strava::AuthedApi::new(
         strava_access_token,
         oauth_config.clone(),
     ));
@@ -46,6 +48,7 @@ pub fn main() {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(Logger::default())
             .data(Webserver::new(strava_api.clone(), oauth_config.clone()))
             .service(web::resource(activities_url.path()).to(activities))
             .service(web::resource(oauth_redirect_url.path()).to(oauth))
@@ -61,21 +64,35 @@ struct TemplateResponse {
     page: service::IndexResponse,
 }
 
-fn activities(service: web::Data<Webserver>) -> impl Responder {
-    service.activities().map_err(log_and_convert_error)
+fn activities(service: web::Data<Webserver>) -> HttpResponse {
+    if let Ok(api) = service.strava_api.api() {
+        match service.activities(&api) {
+            Ok(activities) => HttpResponse::Ok().body(activities),
+            Err(err) => log_and_convert_error(err),
+        }
+    } else {
+        HttpResponse::Found()
+            .header(
+                http::header::LOCATION,
+                service.strava_api.auth_url().to_string(),
+            )
+            .finish()
+            .into_body()
+    }
 }
 
 fn oauth(
     oauth_resp: web::Query<OauthRedirectQuery>,
     service: web::Data<Webserver>,
 ) -> impl Responder {
-    format!(
-        "{:?}",
-        strava::oauth_redirect_callback(&oauth_resp, &service.oauth_config)
-    )
+    if let Ok(resp) = strava::oauth_redirect_callback(&oauth_resp, &service.oauth_config) {
+        format!("STRAVA_OAUTH_TOKEN={}", resp.0.secret())
+    } else {
+        "Somthing Sad".to_string()
+    }
 }
 
-fn log_and_convert_error(error: String) -> actix_web::Error {
+fn log_and_convert_error(error: String) -> HttpResponse {
     dbg!(error);
-    actix_web::error::ErrorExpectationFailed("Something went wrong")
+    HttpResponse::InternalServerError().body("nope")
 }

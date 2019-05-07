@@ -8,4 +8,7 @@ pub enum Error {
 
     #[fail(display = "Network Error: {:?}", _0)]
     NetworkError(#[fail(cause)] Box<failure::Fail>),
+
+    #[fail(display = "Oauth Error")]
+    BadOauthToken,
 }
