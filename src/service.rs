@@ -1,12 +1,14 @@
-use crate::strava;
+use crate::{strava, SiteUrls};
 
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
-#[derive(Clone, Debug)]
+use askama::Template;
+
 pub struct Webserver {
-    events: Vec<Event>,
     pub strava_api: Arc<Mutex<strava::AuthedApi>>,
+    events: Vec<Event>,
+    urls: SiteUrls,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -21,13 +23,15 @@ struct Race {
     distance: &'static str,
 }
 
-#[derive(Serialize, Debug)]
-pub struct IndexResponse {
+#[derive(Template)]
+#[template(path = "index.html")]
+pub struct IndexTemplate<'a> {
     events: Vec<Event>,
+    urls: &'a SiteUrls,
 }
 
 impl Webserver {
-    pub fn new(strava_api: Arc<Mutex<strava::AuthedApi>>) -> Self {
+    pub fn new(strava_api: Arc<Mutex<strava::AuthedApi>>, urls: SiteUrls) -> Self {
         Self {
             events: vec![
                 Event {
@@ -47,13 +51,15 @@ impl Webserver {
                 },
             ],
             strava_api,
+            urls,
         }
     }
 
-    pub fn hello_world(&self) -> Result<IndexResponse, ()> {
-        Ok(IndexResponse {
+    pub fn hello_world(&self) -> IndexTemplate {
+        IndexTemplate {
             events: self.events.to_vec(),
-        })
+            urls: &self.urls,
+        }
     }
 
     pub fn activities(&self, api: &strava::Api) -> Result<String, String> {

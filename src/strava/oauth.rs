@@ -46,9 +46,9 @@ impl AccessTokenResponse {
         self.0.secret().clone()
     }
 
-    pub fn refresh_token(&self) -> String {
-        self.1.secret().clone()
-    }
+    //    pub fn refresh_token(&self) -> String {
+    //        self.1.secret().clone()
+    //    }
 }
 
 pub fn redirect_callback(

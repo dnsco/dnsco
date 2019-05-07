@@ -1,5 +1,5 @@
 use crate::strava::errors::Error as StravaError;
-use crate::strava::models::{Activity, ErrorResponse};
+use crate::strava::models::Activity;
 use crate::strava::oauth::OauthToken;
 
 use failure::Fail;

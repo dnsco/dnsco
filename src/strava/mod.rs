@@ -11,7 +11,6 @@ pub mod oauth;
 pub use api::Api;
 pub use errors::Error;
 
-#[derive(Debug)]
 pub struct AuthedApi {
     oauth_token: Option<OauthToken>,
     oauth_config: oauth::ClientConfig,
