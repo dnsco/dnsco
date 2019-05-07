@@ -1,4 +1,3 @@
-use failure::Fail;
 use oauth2::basic::BasicClient;
 use oauth2::prelude::{NewType, SecretNewType};
 use oauth2::{
@@ -8,6 +7,8 @@ use oauth2::{
 use url::Url;
 
 use serde::Deserialize;
+
+use crate::strava::errors::Error as StravaError;
 
 #[derive(Debug, Clone)]
 pub struct OauthToken(pub String);
@@ -54,14 +55,15 @@ impl AccessTokenResponse {
 pub fn redirect_callback(
     query: &RedirectQuery,
     config: &ClientConfig,
-) -> Result<AccessTokenResponse, impl Fail> {
+) -> Result<AccessTokenResponse, StravaError> {
     let code = AuthorizationCode::new(query.code.clone());
-    oauth2_client(&config).exchange_code(code).and_then(|resp| {
-        Ok(AccessTokenResponse(
+    match oauth2_client(&config).exchange_code(code) {
+        Ok(resp) => Ok(AccessTokenResponse(
             resp.access_token().clone(),
             resp.refresh_token().unwrap().clone(),
-        ))
-    })
+        )),
+        Err(e) => Err(StravaError::OauthAuthorizationError(e)),
+    }
 }
 
 fn oauth2_client(oauth_config: &ClientConfig) -> BasicClient {

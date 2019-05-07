@@ -64,15 +64,17 @@ fn index(service: web::Data<Webserver>) -> impl Responder {
 }
 
 fn activities(service: web::Data<Webserver>) -> HttpResponse {
-    let strava = service.strava_api.lock().unwrap();
-    if let Ok(api) = strava.api() {
+    if let Ok(api) = service.get_strava_api() {
         match service.activities(&api) {
             Ok(activities) => HttpResponse::Ok().body(activities),
             Err(err) => log_and_convert_error(err),
         }
     } else {
         HttpResponse::Found()
-            .header(http::header::LOCATION, strava.auth_url().to_string())
+            .header(
+                http::header::LOCATION,
+                service.oauth_redirect_url().to_string(),
+            )
             .finish()
             .into_body()
     }
@@ -82,11 +84,7 @@ fn oauth(
     oauth_resp: web::Query<strava::oauth::RedirectQuery>,
     service: web::Data<Webserver>,
 ) -> impl Responder {
-    let mut strava = service.strava_api.lock().unwrap();
-
-    if let Ok(resp) = strava.parsed_oauth_response(&oauth_resp) {
-        strava.set_tokens(&resp);
-
+    if let Ok(resp) = service.update_oauth_token(&oauth_resp) {
         HttpResponse::Found()
             .header(http::header::LOCATION, "/activities")
             .finish()

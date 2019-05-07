@@ -4,9 +4,11 @@ use serde::Serialize;
 use std::sync::{Arc, Mutex};
 
 use askama::Template;
+use failure::Fail;
+use url::Url;
 
 pub struct Webserver {
-    pub strava_api: Arc<Mutex<strava::AuthedApi>>,
+    strava_api: Arc<Mutex<strava::AuthedApi>>,
     events: Vec<Event>,
     urls: SiteUrls,
 }
@@ -67,6 +69,24 @@ impl Webserver {
             Ok(activities) => serde_json::to_string(&activities).map_err(reserialization_failure),
             Err(error) => Err(error.to_string()),
         }
+    }
+
+    pub fn get_strava_api(&self) -> Result<strava::Api, strava::Error> {
+        self.strava_api.lock().unwrap().api()
+    }
+
+    pub fn oauth_redirect_url(&self) -> Url {
+        self.strava_api.lock().unwrap().auth_url()
+    }
+
+    pub fn update_oauth_token(
+        &self,
+        oauth_resp: &strava::oauth::RedirectQuery,
+    ) -> Result<strava::oauth::AccessTokenResponse, strava::Error> {
+        let mut strava = self.strava_api.lock().unwrap();
+        let resp = strava.parsed_oauth_response(&oauth_resp)?;
+        strava.set_tokens(&resp);
+        Ok(resp)
     }
 }
 

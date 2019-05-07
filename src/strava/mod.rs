@@ -1,7 +1,5 @@
-use url::Url;
-
-use failure::Fail;
 use oauth::OauthToken;
+use url::Url;
 
 mod api;
 mod errors;
@@ -32,7 +30,7 @@ impl AuthedApi {
     pub fn api(&self) -> Result<Api, errors::Error> {
         match &self.oauth_token {
             Some(token) => Ok(Api::new(token.clone())),
-            None => Err(errors::Error::BadOauthToken),
+            None => Err(Error::NoOauthToken),
         }
     }
 
@@ -43,7 +41,7 @@ impl AuthedApi {
     pub fn parsed_oauth_response(
         &self,
         oauth_resp: &oauth::RedirectQuery,
-    ) -> Result<oauth::AccessTokenResponse, impl Fail> {
+    ) -> Result<oauth::AccessTokenResponse, Error> {
         oauth::redirect_callback(&oauth_resp, &self.oauth_config)
     }
 }
