@@ -5,16 +5,13 @@ authors = ["Dennis Collective <dennis.collective@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+askama = "0.8.0"
+actix-web= "^1.0.0-beta.2"
+env_logger= "0.6.1"
+failure = "0.1.5"
+http = "0.1.17"
+oauth2 = "^2.0.0-beta.2"
+reqwest = "0"
 serde = "1"
 serde_json = "1"
-actix-web= "^1.0.0-beta.2"
-askama = "0.8.0"
-http = "0.1.17"
-
-oauth2 = "^2.0.0-beta.2"
 url = "1"
-reqwest = "0"
-failure = "0.1.5"
-
-[features]
-with-actix-web = []

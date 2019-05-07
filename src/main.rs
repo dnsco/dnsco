@@ -3,7 +3,6 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use std::env;
 use std::sync::{Arc, Mutex};
 
-use askama::Template;
 use service::Webserver;
 use url::Url;
 
@@ -11,6 +10,11 @@ mod service;
 mod strava;
 
 pub fn main() {
+    let log_level = env::var("LOG_LEVEL").unwrap_or("INFO".to_owned());
+    let rust_log = env::var("RUST_LOG").unwrap_or(log_level);
+    env::set_var("RUST_LOG", rust_log);
+    env_logger::init();
+
     let strava_client_id =
         env::var("STRAVA_CLIENT_ID").expect("Missing the STRAVA_CLIENT_ID environment variable.");
     let strava_client_secret = env::var("STRAVA_CLIENT_SECRET")
@@ -25,15 +29,13 @@ pub fn main() {
 
     let urls = SiteUrls::new(host, port);
 
-    let oauth_config = strava::oauth::ClientConfig {
-        client_id: strava_client_id,
-        client_secret: strava_client_secret,
-        redirect_url: urls.oauth_redirect(),
-    };
-
     let strava_api = Arc::new(Mutex::new(strava::AuthedApi::new(
         strava_access_token,
-        oauth_config.clone(),
+        strava::oauth::ClientConfig {
+            client_id: strava_client_id,
+            client_secret: strava_client_secret,
+            redirect_url: urls.oauth_redirect(),
+        },
     )));
 
     let server_url = urls.base.clone();
@@ -95,7 +97,7 @@ fn log_and_convert_error(error: String) -> HttpResponse {
     HttpResponse::InternalServerError().body("nope")
 }
 
-fn into_response<T: Template>(template: T) -> Result<HttpResponse, actix_web::Error> {
+fn into_response<T: askama::Template>(template: T) -> Result<HttpResponse, actix_web::Error> {
     let rsp = template
         .render()
         .map_err(|_| actix_web::error::ErrorInternalServerError("Template parsing error"))?;
