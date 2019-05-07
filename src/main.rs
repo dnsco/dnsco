@@ -1,13 +1,14 @@
 use actix_web::middleware::Logger;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder, ResponseError};
 use std::env;
 use std::sync::{Arc, Mutex};
 
 use service::Webserver;
-use url::Url;
 
+mod config;
 mod service;
 mod strava;
+mod templates;
 
 pub fn main() {
     let log_level = env::var("LOG_LEVEL").unwrap_or("INFO".to_owned());
@@ -30,9 +31,9 @@ pub fn main() {
     let host = env::var("HOST").unwrap_or(format!("localhost:{}", port.unwrap()));
     let server_listen = format!("0.0.0.0:{}", port.unwrap());
 
-    let urls = SiteUrls::new(host);
+    let urls = config::SiteUrls::new(host);
 
-    let strava_api = Arc::new(Mutex::new(strava::AuthedApi::new(
+    let strava_api = Arc::new(Mutex::new(service::StravaApi::new(
         strava_access_token,
         strava::oauth::ClientConfig {
             client_id: strava_client_id,
@@ -41,7 +42,7 @@ pub fn main() {
         },
     )));
 
-    let server_url = urls.base.clone();
+    let server_url = urls.site_url();
 
     println!("go to: {}", &server_url);
 
@@ -63,33 +64,19 @@ fn index(service: web::Data<Webserver>) -> impl Responder {
     into_response(service.hello_world())
 }
 
-fn activities(service: web::Data<Webserver>) -> HttpResponse {
-    match service.activities() {
-        Ok(activities) => HttpResponse::Ok().body(activities),
-        Err(strava::Error::NoOauthToken) => HttpResponse::Found()
-            .header(
-                http::header::LOCATION,
-                service.oauth_redirect_url().to_string(),
-            )
-            .finish(),
-        Err(e) => {
-            dbg!(e);
-            HttpResponse::InternalServerError().body("nope")
-        }
-    }
+fn activities(service: web::Data<Webserver>) -> Result<HttpResponse, strava::Error> {
+    let activities = service.activities()?;
+    Ok(HttpResponse::Ok().body(activities))
 }
 
 fn oauth(
     oauth_resp: web::Query<strava::oauth::RedirectQuery>,
     service: web::Data<Webserver>,
-) -> impl Responder {
-    if let Ok(_) = service.update_oauth_token(&oauth_resp) {
-        HttpResponse::Found()
-            .header(http::header::LOCATION, "/activities")
-            .finish()
-    } else {
-        HttpResponse::InternalServerError().body("Sadness")
-    }
+) -> Result<HttpResponse, strava::Error> {
+    service.update_oauth_token(&oauth_resp)?;
+    Ok(HttpResponse::Found()
+        .header(http::header::LOCATION, "/activities")
+        .finish())
 }
 
 fn into_response<T: askama::Template>(template: T) -> Result<HttpResponse, actix_web::Error> {
@@ -100,25 +87,16 @@ fn into_response<T: askama::Template>(template: T) -> Result<HttpResponse, actix
     Ok(HttpResponse::Ok().content_type("text/html").body(rsp))
 }
 
-#[derive(Clone)]
-pub struct SiteUrls {
-    base: Url,
-}
-
-impl SiteUrls {
-    pub fn new(host: String) -> Self {
-        let host_with_scheme = format!("http://{}", host);
-
-        Self {
-            base: url::Url::parse(&host_with_scheme).unwrap(),
+impl ResponseError for strava::Error {
+    fn error_response(&self) -> HttpResponse {
+        match self {
+            strava::Error::NoOauthToken(redirect_url) => HttpResponse::Found()
+                .header(http::header::LOCATION, redirect_url.to_string())
+                .finish(),
+            e => {
+                dbg!(e);
+                HttpResponse::InternalServerError().body("Something Went Wrong")
+            }
         }
-    }
-
-    pub fn activities(&self) -> Url {
-        self.base.join("/activities").unwrap()
-    }
-
-    pub fn oauth_redirect(&self) -> Url {
-        self.base.join("/oauth").unwrap()
     }
 }

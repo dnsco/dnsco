@@ -2,6 +2,7 @@ use crate::strava::models;
 use failure::Fail;
 use oauth2::basic::BasicErrorResponseType;
 use oauth2::RequestTokenError;
+use url::Url;
 
 #[derive(Debug, Fail)]
 pub enum Error {
@@ -12,7 +13,7 @@ pub enum Error {
     NetworkError(#[fail(cause)] Box<failure::Fail>),
 
     #[fail(display = "No Strava Creds")]
-    NoOauthToken,
+    NoOauthToken(Url),
 
     #[fail(display = "Oauth Failure")]
     OauthAuthorizationError(#[fail(cause)] RequestTokenError<BasicErrorResponseType>),

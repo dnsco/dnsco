@@ -1,40 +1,18 @@
-use crate::{strava, SiteUrls};
-
-use serde::Serialize;
+use crate::{config, service, strava, templates};
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use crate::strava::AuthedApi;
-use askama::Template;
-use failure::Fail;
-use url::Url;
+use service::models::{Event, Race};
+use service::StravaApi;
+use templates::IndexTemplate;
 
 pub struct Webserver {
-    strava_api: Arc<Mutex<strava::AuthedApi>>,
+    strava_api: Arc<Mutex<StravaApi>>,
     events: Vec<Event>,
-    urls: SiteUrls,
-}
-
-#[derive(Serialize, Clone, Debug)]
-struct Event {
-    name: &'static str,
-    time: &'static str,
-    info: Race,
-}
-
-#[derive(Serialize, Clone, Debug)]
-struct Race {
-    distance: &'static str,
-}
-
-#[derive(Template)]
-#[template(path = "index.html")]
-pub struct IndexTemplate<'a> {
-    events: Vec<Event>,
-    urls: &'a SiteUrls,
+    urls: config::SiteUrls,
 }
 
 impl Webserver {
-    pub fn new(strava_api: Arc<Mutex<strava::AuthedApi>>, urls: SiteUrls) -> Self {
+    pub fn new(strava_api: Arc<Mutex<StravaApi>>, urls: config::SiteUrls) -> Self {
         Self {
             events: vec![
                 Event {
@@ -68,18 +46,14 @@ impl Webserver {
     pub fn activities(&self) -> Result<String, strava::Error> {
         match self.get_strava_api().api()?.activities() {
             Ok(activities) => {
-                serde_json::to_string(&activities).map_err(|e| strava::Error::Parse(e)))
+                serde_json::to_string(&activities).map_err(|e| strava::Error::Parse(e))
             }
             Err(error) => Err(error),
         }
     }
 
-    fn get_strava_api(&self) -> MutexGuard<AuthedApi> {
+    fn get_strava_api(&self) -> MutexGuard<StravaApi> {
         self.strava_api.lock().unwrap()
-    }
-
-    pub fn oauth_redirect_url(&self) -> Url {
-        self.get_strava_api().auth_url()
     }
 
     pub fn update_oauth_token(
