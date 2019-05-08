@@ -1,11 +1,20 @@
+use crate::errors::{AppError, AppResult};
 use actix_web::HttpResponse;
+use dnsco_service::Template;
 
-pub fn into_response<T: dnsco_service::Template>(
-    template: T,
-) -> Result<HttpResponse, actix_web::Error> {
-    let rsp = template
-        .render()
-        .map_err(|_| actix_web::error::ErrorInternalServerError("Template parsing error"))?;
+pub struct TemplateResponse<T: Template>(T);
 
-    Ok(HttpResponse::Ok().content_type("text/html").body(rsp))
+impl<T: Template> TemplateResponse<T> {
+    pub fn new(template: T) -> Self {
+        TemplateResponse(template)
+    }
+}
+
+impl<T: Template> From<TemplateResponse<T>> for AppResult {
+    fn from(t: TemplateResponse<T>) -> AppResult {
+        let rendered =
+            t.0.render()
+                .map_err(|e| AppError::TemplateError(Box::new(e)))?;
+        Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
+    }
 }

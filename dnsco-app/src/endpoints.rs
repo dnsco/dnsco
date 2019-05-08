@@ -1,12 +1,13 @@
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpResponse};
 
-use crate::errors::{AppError, AppResult};
-use crate::templates::into_response;
 use dnsco_service::Webserver;
 use strava::oauth::RedirectQuery as OauthQuery;
 
-pub fn index(service: web::Data<Webserver>) -> impl Responder {
-    into_response(service.hello_world())
+use crate::errors::{AppError, AppResult};
+use crate::templates::TemplateResponse;
+
+pub fn index(service: web::Data<Webserver>) -> AppResult {
+    TemplateResponse::new(service.hello_world()).into()
 }
 
 pub fn activities(service: web::Data<Webserver>) -> AppResult {
