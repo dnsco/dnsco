@@ -7,10 +7,10 @@ edition = "2018"
 [dependencies]
 env_logger= "0.6.1"
 
-dnsco-app= { path = "./dnsco-app" }
-dnsco-data = { path = "./dnsco-data" }
-dnsco-service = { path = "./dnsco-service" }
-strava = { path = "./strava" }
+dnsco-app= { path = "dnsco-app" }
+dnsco-data = { path = "dnsco-data" }
+dnsco-service = { path = "dnsco-service" }
+strava = { path = "strava" }
 
 
 [workspace]

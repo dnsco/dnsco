@@ -12,7 +12,7 @@ http = "0.1.17"
 url = "1"
 
 
-dnsco-data = { path="../dnsco-data  " }
+dnsco-data = { path="../dnsco-data" }
 dnsco-service = { path="../dnsco-service" }
 strava = { path="../strava" }
 
