@@ -599,10 +599,20 @@ dependencies = [
 name = "dnsco"
 version = "0.1.0"
 dependencies = [
- "actix-web 1.0.0-beta.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dnsco-app 0.1.0",
  "dnsco-data 0.1.0",
  "dnsco-service 0.1.0",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "strava 0.1.0",
+]
+
+[[package]]
+name = "dnsco-app"
+version = "0.1.0"
+dependencies = [
+ "actix-web 1.0.0-beta.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dnsco-data 0.1.0",
+ "dnsco-service 0.1.0",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "http 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "strava 0.1.0",

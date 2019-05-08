@@ -5,15 +5,18 @@ authors = ["Dennis Collective <dennis.collective@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-actix-web= "^1.0.0-beta.2"
 env_logger= "0.6.1"
-failure = "0.1.5"
-http = "0.1.17"
-url = "1"
 
-dnsco-data = { path="./dnsco-data" }
-dnsco-service = { path="./dnsco-service" }
-strava = { path="./strava" }
+dnsco-app= { path = "./dnsco-app" }
+dnsco-data = { path = "./dnsco-data" }
+dnsco-service = { path = "./dnsco-service" }
+strava = { path = "./strava" }
+
 
 [workspace]
-members = [ "dnsco-data", "dnsco-service", "strava"]
+members = [
+  "dnsco-app",
+  "dnsco-data",
+  "dnsco-service",
+  "strava"
+]

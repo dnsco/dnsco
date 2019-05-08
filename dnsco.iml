@@ -22,6 +22,11 @@
       <sourceFolder url="file://$MODULE_DIR$/dnsco-service/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/dnsco-service/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/dnsco-service/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-app/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-app/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-app/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-app/benches" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/dnsco-app/target" />
       <excludeFolder url="file://$MODULE_DIR$/dnsco-data/target" />
       <excludeFolder url="file://$MODULE_DIR$/dnsco-service/target" />
       <excludeFolder url="file://$MODULE_DIR$/dnsco_data/target" />
