@@ -6,11 +6,8 @@ use std::sync::{Arc, Mutex};
 
 use strava;
 
-use service::Webserver;
-
-mod config;
-mod service;
-mod templates;
+use dnsco_service::config;
+use dnsco_service::Webserver;
 
 pub fn main() {
     let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "INFO".to_owned());
@@ -35,7 +32,7 @@ pub fn main() {
 
     let urls = config::SiteUrls::new(host);
 
-    let strava_api = Arc::new(Mutex::new(service::StravaApi::new(
+    let strava_api = Arc::new(Mutex::new(dnsco_data::StravaApi::new(
         strava_access_token,
         strava::oauth::ClientConfig {
             client_id: strava_client_id,
@@ -83,7 +80,9 @@ fn oauth(
         .finish())
 }
 
-fn into_response<T: askama::Template>(template: T) -> Result<HttpResponse, actix_web::Error> {
+fn into_response<T: dnsco_service::Template>(
+    template: T,
+) -> Result<HttpResponse, actix_web::Error> {
     let rsp = template
         .render()
         .map_err(|_| actix_web::error::ErrorInternalServerError("Template parsing error"))?;

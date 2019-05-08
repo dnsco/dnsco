@@ -11,6 +11,20 @@
       <sourceFolder url="file://$MODULE_DIR$/strava/examples" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/strava/tests" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/strava/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-data/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco_data/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco_data/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco_data/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-data/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-data/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-data/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-service/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-service/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-service/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/dnsco-service/benches" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/dnsco-data/target" />
+      <excludeFolder url="file://$MODULE_DIR$/dnsco-service/target" />
+      <excludeFolder url="file://$MODULE_DIR$/dnsco_data/target" />
       <excludeFolder url="file://$MODULE_DIR$/strava/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

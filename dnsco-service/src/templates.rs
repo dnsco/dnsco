@@ -1,6 +1,6 @@
+use crate::config;
 use askama::Template;
-
-use crate::{config, service::models};
+use dnsco_data::models;
 
 #[derive(Template)]
 #[template(path = "index.html")]

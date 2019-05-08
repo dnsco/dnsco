@@ -1,44 +1,31 @@
-use crate::{config, service, templates};
+use crate::{config, templates};
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use service::models::{Event, Race};
-use service::StravaApi;
+use dnsco_data::{EventsRepo, StravaApi};
+use strava;
+
 use templates::IndexTemplate;
 
 pub struct Webserver {
+    events_repo: EventsRepo,
     strava_api: Arc<Mutex<StravaApi>>,
-    events: Vec<Event>,
     urls: config::SiteUrls,
 }
 
 impl Webserver {
     pub fn new(strava_api: Arc<Mutex<StravaApi>>, urls: config::SiteUrls) -> Self {
+        let events_repo = EventsRepo {};
         Self {
-            events: vec![
-                Event {
-                    name: "Marin Ultra Challenge",
-                    time: "2019-03-09",
-                    info: Race { distance: "25k " },
-                },
-                Event {
-                    name: "Behind the Rocks",
-                    time: "2019-03-23",
-                    info: Race { distance: "30k" },
-                },
-                Event {
-                    name: "Broken Arrow Skyrace",
-                    time: "2019-06-23",
-                    info: Race { distance: "26k " },
-                },
-            ],
+            events_repo,
             strava_api,
             urls,
         }
     }
 
     pub fn hello_world(&self) -> IndexTemplate {
+        let events = self.events_repo.events();
         IndexTemplate {
-            events: self.events.to_vec(),
+            events,
             urls: &self.urls,
         }
     }

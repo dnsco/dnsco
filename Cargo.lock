@@ -600,10 +600,31 @@ name = "dnsco"
 version = "0.1.0"
 dependencies = [
  "actix-web 1.0.0-beta.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "askama 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dnsco-data 0.1.0",
+ "dnsco-service 0.1.0",
  "env_logger 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "http 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
+ "strava 0.1.0",
+ "url 1.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "dnsco-data"
+version = "0.1.0"
+dependencies = [
+ "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
+ "strava 0.1.0",
+]
+
+[[package]]
+name = "dnsco-service"
+version = "0.1.0"
+dependencies = [
+ "askama 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dnsco-data 0.1.0",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.38 (registry+https://github.com/rust-lang/crates.io-index)",
  "strava 0.1.0",
