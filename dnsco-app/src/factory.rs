@@ -6,13 +6,16 @@ use dnsco_data::StravaApi;
 use dnsco_service::config;
 use dnsco_service::Webserver;
 
+use log::info;
+
 use crate::endpoints;
 
 pub fn run_app(strava: StravaApi, urls: config::SiteUrls, port: u16) {
     let strava_api = Arc::new(Mutex::new(strava));
 
     let server_url = urls.site_url();
-    println!("go to: {}", &server_url);
+
+    info!("Starting server. Go to: {}", &server_url);
 
     HttpServer::new(move || {
         App::new()

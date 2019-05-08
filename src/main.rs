@@ -7,7 +7,7 @@ pub fn main() {
     let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "INFO".to_owned());
     let rust_log = env::var("RUST_LOG").unwrap_or(log_level);
     env::set_var("RUST_LOG", rust_log);
-    env_logger::init();
+    pretty_env_logger::init();
 
     let strava_client_id =
         env::var("STRAVA_CLIENT_ID").expect("Missing the STRAVA_CLIENT_ID environment variable.");

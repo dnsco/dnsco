@@ -8,6 +8,7 @@ workspace= ".."
 [dependencies]
 actix-web= "^1.0.0-beta.2"
 failure = "0.1.5"
+log = "0.4"
 http = "0.1.17"
 url = "1"
 
