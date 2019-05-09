@@ -40,7 +40,7 @@ pub struct RedirectQuery {
 #[derive(Debug)]
 pub struct AccessTokenResponse {
     pub access: AccessToken,
-    pub athlete: models::Athlete,
+    pub athlete: models::athlete::Summary,
     pub refresh: RefreshToken,
 }
 
@@ -96,7 +96,7 @@ type OauthClient = Client<models::ErrorResponse, OauthResponse, BasicTokenType>;
 
 #[derive(Serialize, Clone, Deserialize, Debug, PartialEq)]
 struct HasAthlete {
-    athlete: models::Athlete,
+    athlete: models::athlete::Summary,
 }
 
 impl oauth2::ExtraTokenFields for HasAthlete {}

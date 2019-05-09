@@ -45,6 +45,7 @@ impl Webserver {
     ) -> Result<strava::oauth::AccessTokenResponse, strava::Error> {
         let mut strava = self.strava_api.lock().unwrap();
         let resp = strava.parsed_oauth_response(&oauth_resp)?;
+        dbg!(&resp);
         strava.set_tokens(&resp);
         Ok(resp)
     }

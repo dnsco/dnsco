@@ -2,7 +2,7 @@ use failure::Fail;
 use reqwest;
 use reqwest::header::AUTHORIZATION;
 
-use crate::models::Activity;
+use crate::models::activity;
 use crate::oauth::OauthToken;
 use crate::Error;
 
@@ -18,7 +18,7 @@ impl Api {
         Self { oauth_token }
     }
 
-    pub fn activities(&self) -> Result<Vec<Activity>, Error> {
+    pub fn activities(&self) -> Result<Vec<activity::Summary>, Error> {
         let mut response = self.activities_response()?;
 
         if response.status().is_success() {
