@@ -11,8 +11,14 @@ use url::Url;
 
 use crate::{models, Error};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct OauthToken(pub String);
+
+impl std::fmt::Debug for OauthToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "OauthToken([redacted])")
+    }
+}
 
 const AUTH_URL: &str = "https://www.strava.com/oauth/authorize";
 const TOKEN_URL: &str = "https://www.strava.com/oauth/token";
