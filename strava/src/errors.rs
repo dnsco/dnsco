@@ -1,6 +1,4 @@
 use failure::Fail;
-use oauth2::basic::BasicErrorResponseType;
-use oauth2::RequestTokenError;
 use url::Url;
 
 use crate::models;
@@ -16,9 +14,9 @@ pub enum Error {
     #[fail(display = "Not logged in to Strava")]
     NoOauthToken(Url),
 
-    #[fail(display = "Oauth Failure")]
-    OauthAuthorizationError(#[fail(cause)] RequestTokenError<BasicErrorResponseType>),
+    #[fail(display = "Oauth Failure: {}", _0)]
+    OauthAuthorizationError(models::ErrorResponse),
 
     #[fail(display = "Failed to De/Serialize Strava Response")]
-    Parse(#[fail(cause)] serde_json::Error),
+    Parse(#[fail(cause)] serde_json::Error, Option<Vec<u8>>),
 }

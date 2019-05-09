@@ -1,14 +1,15 @@
-use oauth2::basic::BasicClient;
-use oauth2::prelude::{NewType, SecretNewType};
+use oauth2::basic::BasicTokenType;
+use oauth2::prelude::*;
 use oauth2::{
-    AccessToken, AuthType, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
-    RedirectUrl, RefreshToken, Scope, TokenResponse, TokenUrl,
+    AccessToken, AuthType, AuthUrl, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken,
+    RedirectUrl, RefreshToken, RequestTokenError, Scope, StandardTokenResponse, TokenResponse,
+    TokenUrl,
 };
+
+use serde::{Deserialize, Serialize};
 use url::Url;
 
-use serde::Deserialize;
-
-use crate::Error;
+use crate::{models, Error};
 
 #[derive(Debug, Clone)]
 pub struct OauthToken(pub String);
@@ -23,6 +24,36 @@ pub struct ClientConfig {
     pub redirect_url: url::Url,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct RedirectQuery {
+    code: String,
+    state: String,
+    scope: String,
+}
+
+#[derive(Debug)]
+pub struct AccessTokenResponse {
+    pub access: AccessToken,
+    pub athlete: models::Athlete,
+    pub refresh: RefreshToken,
+}
+
+impl AccessTokenResponse {
+    pub fn oauth_token(&self) -> String {
+        self.access.secret().clone()
+    }
+}
+
+impl From<OauthResponse> for AccessTokenResponse {
+    fn from(resp: OauthResponse) -> Self {
+        Self {
+            access: resp.access_token().to_owned(),
+            refresh: resp.refresh_token().unwrap().to_owned(),
+            athlete: resp.extra_fields().to_owned().athlete,
+        }
+    }
+}
+
 pub fn get_authorization_url(oauth_config: &ClientConfig) -> Url {
     let mut client = oauth2_client(oauth_config);
     let redirect_url = RedirectUrl::new(oauth_config.redirect_url.clone());
@@ -33,45 +64,50 @@ pub fn get_authorization_url(oauth_config: &ClientConfig) -> Url {
     client.authorize_url(CsrfToken::new_random).0
 }
 
-#[derive(Deserialize, Debug)]
-pub struct RedirectQuery {
-    code: String,
-    state: String,
-    scope: String,
-}
-
-#[derive(Debug)]
-pub struct AccessTokenResponse(pub AccessToken, RefreshToken);
-impl AccessTokenResponse {
-    pub fn oauth_token(&self) -> String {
-        self.0.secret().clone()
-    }
-
-    //    pub fn refresh_token(&self) -> String {
-    //        self.1.secret().clone()
-    //    }
-}
-
 pub fn redirect_callback(
     query: &RedirectQuery,
     config: &ClientConfig,
 ) -> Result<AccessTokenResponse, Error> {
     let code = AuthorizationCode::new(query.code.clone());
     match oauth2_client(&config).exchange_code(code) {
-        Ok(resp) => Ok(AccessTokenResponse(
-            resp.access_token().clone(),
-            resp.refresh_token().unwrap().clone(),
-        )),
-        Err(e) => Err(Error::OauthAuthorizationError(e)),
+        Ok(resp) => Ok(resp.into()),
+        Err(err) => Err(err.into()),
     }
 }
 
-fn oauth2_client(oauth_config: &ClientConfig) -> BasicClient {
+fn oauth2_client(oauth_config: &ClientConfig) -> OauthClient {
     let client_id = ClientId::new(oauth_config.client_id.clone());
     let client_secret = ClientSecret::new(oauth_config.client_secret.clone());
     let auth_url = AuthUrl::new(Url::parse(AUTH_URL).expect("Invalid AuthUrl"));
     let token_url = TokenUrl::new(Url::parse(TOKEN_URL).expect("Invalid TokenUrl"));
 
-    BasicClient::new(client_id, Some(client_secret), auth_url, Some(token_url))
+    OauthClient::new(client_id, Some(client_secret), auth_url, Some(token_url))
         .set_auth_type(AuthType::RequestBody)
+}
+
+type OauthResponse = StandardTokenResponse<HasAthlete, BasicTokenType>;
+type OauthClient = Client<models::ErrorResponse, OauthResponse, BasicTokenType>;
+
+#[derive(Serialize, Clone, Deserialize, Debug, PartialEq)]
+struct HasAthlete {
+    athlete: models::Athlete,
+}
+
+impl oauth2::ExtraTokenFields for HasAthlete {}
+
+impl oauth2::ErrorResponseType for models::ErrorResponse {}
+
+impl From<RequestTokenError<models::ErrorResponse>> for Error {
+    fn from(error: RequestTokenError<models::ErrorResponse>) -> Self {
+        match error {
+            oauth2::RequestTokenError::Parse(error, resp) => {
+                match serde_json::from_slice::<models::ErrorResponse>(&resp) {
+                    Ok(e) => Error::OauthAuthorizationError(e),
+                    Err(_) => Error::Parse(error, Some(resp)),
+                }
+            }
+
+            e => Error::NetworkError(Box::new(e)),
+        }
+    }
 }

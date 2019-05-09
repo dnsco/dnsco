@@ -31,10 +31,8 @@ impl Webserver {
     }
 
     pub fn activities(&self) -> Result<String, strava::Error> {
-        match self.get_strava_api().api()?.activities() {
-            Ok(activities) => serde_json::to_string(&activities).map_err(strava::Error::Parse),
-            Err(error) => Err(error),
-        }
+        let activities = self.get_strava_api().api()?.activities()?;
+        return serde_json::to_string(&activities).map_err(|e| strava::Error::Parse(e, None));
     }
 
     fn get_strava_api(&self) -> MutexGuard<StravaApi> {
