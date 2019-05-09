@@ -4,7 +4,7 @@ use reqwest::header::AUTHORIZATION;
 
 use crate::models::activity;
 use crate::oauth::OauthToken;
-use crate::Error;
+use crate::{models, Error};
 
 const ACTIVITIES_URL: &str = "https://www.strava.com/api/v3/athlete/activities";
 
@@ -27,21 +27,7 @@ impl Api {
             }
         }
 
-        Err(Api::parse_error(&mut response))
-    }
-
-    fn parse_error(response: &mut reqwest::Response) -> Error {
-        match response.json() {
-            Ok(api_error) => Error::ApiError(api_error),
-            Err(json_error) => {
-                let context = match response.text() {
-                    Ok(body) => format!("Failed to parse strava api response: {}", body),
-                    Err(e) => format!("Can't read strava api response body: {}", e),
-                };
-
-                Error::NetworkError(Box::new(json_error.context(context)))
-            }
-        }
+        Err(response.into())
     }
 
     fn activities_response(&self) -> Result<reqwest::Response, Error> {
@@ -52,5 +38,21 @@ impl Api {
             .map_err(|e| {
                 Error::NetworkError(Box::new(e.context("Failed to fetch Strava Activities")))
             })
+    }
+}
+
+impl From<reqwest::Response> for Error {
+    fn from(mut response: reqwest::Response) -> Self {
+        match response.json::<models::ErrorResponse>() {
+            Ok(api_error) => Error::ApiError(api_error),
+            Err(json_error) => {
+                let context = match response.text() {
+                    Ok(body) => format!("Failed to parse strava api response: {}", body),
+                    Err(e) => format!("Can't read strava api response body: {}", e),
+                };
+
+                Error::NetworkError(Box::new(json_error.context(context)))
+            }
+        }
     }
 }
