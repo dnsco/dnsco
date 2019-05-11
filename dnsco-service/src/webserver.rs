@@ -1,10 +1,11 @@
-use crate::{config, templates};
+use askama::Template;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use dnsco_data::{EventsRepo, StravaApi};
 use strava;
 
-use templates::IndexTemplate;
+use crate::{config, templates};
+use templates::{activities_template, index_template};
 
 pub struct Webserver {
     events_repo: EventsRepo,
@@ -22,17 +23,15 @@ impl Webserver {
         }
     }
 
-    pub fn hello_world(&self) -> IndexTemplate {
+    pub fn hello_world(&self) -> impl Template + '_ {
         let events = self.events_repo.events();
-        IndexTemplate {
-            events,
-            urls: &self.urls,
-        }
+        index_template::new(events, &self.urls)
     }
 
-    pub fn activities(&self) -> Result<String, strava::Error> {
-        let activities = self.get_strava_api().api()?.activities()?;
-        return serde_json::to_string(&activities).map_err(|e| strava::Error::Parse(e, None));
+    pub fn activities(&self) -> Result<impl Template, strava::Error> {
+        let strava = self.get_strava_api().api()?.activities()?;
+        let template = activities_template::new(strava);
+        Ok(template)
     }
 
     fn get_strava_api(&self) -> MutexGuard<StravaApi> {
@@ -45,7 +44,6 @@ impl Webserver {
     ) -> Result<strava::oauth::AccessTokenResponse, strava::Error> {
         let mut strava = self.strava_api.lock().unwrap();
         let resp = strava.parsed_oauth_response(&oauth_resp)?;
-        dbg!(&resp);
         strava.set_tokens(&resp);
         Ok(resp)
     }

@@ -12,7 +12,7 @@ pub fn index(service: web::Data<Webserver>) -> AppResult {
 
 pub fn activities(service: web::Data<Webserver>) -> AppResult {
     let activities = service.activities().map_err(AppError::StravaError)?;
-    Ok(HttpResponse::Ok().body(activities))
+    TemplateResponse::new(activities).into()
 }
 
 pub fn oauth(oauth_resp: web::Query<OauthQuery>, service: web::Data<Webserver>) -> AppResult {
