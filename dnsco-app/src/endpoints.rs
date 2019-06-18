@@ -11,7 +11,7 @@ pub fn index(service: web::Data<Webserver>) -> AppResult {
 }
 
 pub fn activities(service: web::Data<Webserver>) -> AppResult {
-    let activities = service.activities().map_err(AppError::StravaError)?;
+    let activities = service.update_activities().map_err(AppError::StravaError)?;
     TemplateResponse::new(activities).into()
 }
 

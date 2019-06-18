@@ -23,3 +23,33 @@ impl Events {
         ]
     }
 }
+pub mod activities_repo {
+    use diesel::pg::upsert::*;
+    use diesel::prelude::*;
+    use diesel::PgConnection;
+
+    use crate::models::{Activity, NewActivity};
+    use crate::schema::activities;
+    use crate::schema::activities::dsl::*;
+
+    pub struct Repo<'a> {
+        pub connection: &'a PgConnection,
+    }
+
+    impl<'a> Repo<'a> {
+        pub fn all(&self) -> Vec<Activity> {
+            activities.load(self.connection).expect("plz")
+        }
+
+        pub fn upsert(&self, activity: &NewActivity) -> diesel::QueryResult<usize> {
+            dbg!(diesel::query_builder::AsChangeset::as_changeset(activity));
+            dbg!(name.eq(excluded(name)));
+            diesel::insert_into(activities::table)
+                .values(activity)
+                .on_conflict(remote_id)
+                .do_update()
+                .set(activity)
+                .execute(self.connection)
+        }
+    }
+}

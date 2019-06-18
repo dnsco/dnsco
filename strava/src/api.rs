@@ -23,6 +23,7 @@ impl Api {
 
         if response.status().is_success() {
             if let Ok(activities) = response.json() {
+                dbg!(response.text());
                 return Ok(activities);
             }
         }

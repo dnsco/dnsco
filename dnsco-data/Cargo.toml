@@ -6,6 +6,7 @@ edition = "2018"
 workspace = ".."
 
 [dependencies]
+diesel = { version = "1.0.0", features = ["postgres"] }
 failure = "0.1.5"
 serde = "1"
 serde_json = "1"

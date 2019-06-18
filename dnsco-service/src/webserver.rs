@@ -28,7 +28,7 @@ impl Webserver {
         index_template::new(events, &self.urls)
     }
 
-    pub fn activities(&self) -> Result<impl Template, strava::Error> {
+    pub fn update_activities(&self) -> Result<impl Template, strava::Error> {
         let strava = self.get_strava_api().api()?.activities()?;
         let template = activities_template::new(strava);
         Ok(template)
