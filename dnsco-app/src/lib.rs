@@ -1,24 +1,23 @@
 use actix_web::error::BlockingError;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpResponse, HttpServer, ResponseError};
-use askama::Template;
+use failure::Fail;
 use log::error;
 
 use std::sync::{Arc, Mutex};
 
 use dnsco_data::{Database, StravaApi};
-
 use strava::oauth::RedirectQuery as OauthQuery;
 
 mod app_service;
-mod errors;
 mod templates;
 
-use errors::{AppError, AppResult};
 use futures::Future;
 use templates::TemplateResponse;
 
 pub mod config;
+
+pub mod activities;
 
 pub fn run(db: Database, strava: StravaApi, urls: config::SiteUrls, port: u16) {
     let database = Arc::new(db);
@@ -53,10 +52,12 @@ pub fn index(service: web::Data<app_service::Service>) -> AppResult {
 pub fn activities(
     service: web::Data<app_service::Service>,
 ) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
-    web::block(move || service.activities()).then(|res| match res {
-        Ok(acts) => HttpResponse::Ok().body(acts),
-        Err(_) => HttpResponse::InternalServerError().into(),
-    })
+    web::block(move || service.activities())
+        .map(|t| -> AppResult { TemplateResponse::new(t).into() })
+        .then(|e| match e {
+            Ok(Ok(temp)) => temp,
+            _ => e.into(),
+        })
 }
 
 pub fn update_activities(
@@ -66,7 +67,7 @@ pub fn update_activities(
 
     web::block(move || service.update_activities().map_err(AppError::StravaError)).then(|res| {
         match res {
-            Ok(activities) => HttpResponse::Found()
+            Ok(_) => HttpResponse::Found()
                 .header(http::header::LOCATION, redirect_path)
                 .finish(),
             Err(e) => match e {
@@ -90,9 +91,32 @@ pub fn oauth(
         .finish())
 }
 
+pub type AppResult = Result<HttpResponse, AppError>;
+
+#[derive(Debug, Fail)]
+pub enum AppError {
+    #[fail(display = "Strava Api Returned Error: {:?}", _0)]
+    StravaError(#[fail(cause)] strava::Error),
+
+    #[fail(display = "Issue Rendering Template: {:?}", _0)]
+    TemplateError(#[fail(cause)] Box<Fail>),
+
+    #[fail(display = "Threadpool is gone")]
+    ThreadCanceled,
+}
+
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         handle_app_error(self)
+    }
+}
+
+impl From<BlockingError<AppError>> for AppError {
+    fn from(e: BlockingError<AppError>) -> AppError {
+        match e {
+            BlockingError::Error(e) => e,
+            BlockingError::Canceled => AppError::ThreadCanceled,
+        }
     }
 }
 

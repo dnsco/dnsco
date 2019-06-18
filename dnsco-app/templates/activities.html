@@ -5,8 +5,10 @@
 
 {{ activities.last_seven_days().len() }} in the last seven days;
 
-{%  for activity in activities.0 %}
-<div> {{activity.name}} - {{activity.distance.miles()}} - {{activity.total_elevation_gain.feet()}} vert </div>
+{% for activity in activities.0 %}
+<div> {{activity.name}}</div>
 {% endfor %}
+<br/>
+<a href="{{ update_url.path() }}">Update</a>
 </body>
 </html>

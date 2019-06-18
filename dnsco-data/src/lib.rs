@@ -8,6 +8,6 @@ pub mod database;
 pub mod models;
 pub mod schema;
 
-pub use database::Database;
+pub use database::{Connection as DbConnection, Database};
 pub use repos::Events as EventsRepo;
 pub use strava_api::StravaApi;

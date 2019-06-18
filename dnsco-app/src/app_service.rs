@@ -5,8 +5,9 @@ use dnsco_data::{repos, Database, EventsRepo, StravaApi};
 use repos::activities_repo;
 use strava;
 
-use crate::{config, templates};
-use templates::{activities_template, index_template};
+use crate::activities::ListTemplate;
+use crate::templates::index_template;
+use crate::{config, AppError};
 
 pub struct Service {
     db: Arc<Database>,
@@ -34,21 +35,14 @@ impl Service {
         index_template::new(events, &self.urls)
     }
 
-    pub fn activities(&self) -> Result<String, ()> {
+    pub fn activities(&self) -> Result<ListTemplate, AppError> {
         let connection = self.db.get_connection();
 
         let repo = activities_repo::Repo {
             connection: &connection,
         };
 
-        let string = repo
-            .all()
-            .iter()
-            .map(|a| a.name.clone())
-            .collect::<Vec<String>>()
-            .join(", ");
-
-        Ok(string)
+        Ok(ListTemplate::new(repo.all(), self.urls.update_activities()))
     }
 
     pub fn update_activities(&self) -> Result<(), strava::Error> {

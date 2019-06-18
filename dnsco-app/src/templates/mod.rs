@@ -1,4 +1,4 @@
-use crate::errors::{AppError, AppResult};
+use crate::{AppError, AppResult};
 use actix_web::HttpResponse;
 use askama::Template;
 
@@ -19,5 +19,4 @@ impl<T: Template> From<TemplateResponse<T>> for AppResult {
     }
 }
 
-pub mod activities_template;
 pub mod index_template;
