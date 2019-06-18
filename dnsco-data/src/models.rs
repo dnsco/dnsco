@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 use crate::schema::activities;
+
 #[derive(Queryable)]
 pub struct Activity {
     pub id: i32,

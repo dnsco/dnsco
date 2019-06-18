@@ -10,14 +10,13 @@ use dnsco_data::{Database, StravaApi};
 
 use strava::oauth::RedirectQuery as OauthQuery;
 
+mod app_service;
 mod errors;
 mod templates;
-mod webserver;
 
 use errors::{AppError, AppResult};
 use futures::Future;
 use templates::TemplateResponse;
-use webserver::Service;
 
 pub mod config;
 
@@ -28,7 +27,7 @@ pub fn run(db: Database, strava: StravaApi, urls: config::SiteUrls, port: u16) {
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .data(Service::new(
+            .data(app_service::Service::new(
                 Arc::clone(&database),
                 Arc::clone(&strava_api),
                 urls.clone(),
@@ -47,12 +46,12 @@ pub fn run(db: Database, strava: StravaApi, urls: config::SiteUrls, port: u16) {
     .unwrap();
 }
 
-pub fn index(service: web::Data<Service>) -> AppResult {
+pub fn index(service: web::Data<app_service::Service>) -> AppResult {
     TemplateResponse::new(service.hello_world()).into()
 }
 
 pub fn activities(
-    service: web::Data<Service>,
+    service: web::Data<app_service::Service>,
 ) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
     web::block(move || service.activities()).then(|res| match res {
         Ok(acts) => HttpResponse::Ok().body(acts),
@@ -61,11 +60,15 @@ pub fn activities(
 }
 
 pub fn update_activities(
-    service: web::Data<Service>,
+    service: web::Data<app_service::Service>,
 ) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
+    let redirect_path = service.urls.activities().path().to_owned();
+
     web::block(move || service.update_activities().map_err(AppError::StravaError)).then(|res| {
         match res {
-            Ok(activities) => HttpResponse::Ok().body(activities.render().unwrap()),
+            Ok(activities) => HttpResponse::Found()
+                .header(http::header::LOCATION, redirect_path)
+                .finish(),
             Err(e) => match e {
                 BlockingError::Error(ref error) => handle_app_error(error),
                 _ => HttpResponse::InternalServerError().into(),
@@ -74,7 +77,10 @@ pub fn update_activities(
     })
 }
 
-pub fn oauth(oauth_resp: web::Query<OauthQuery>, service: web::Data<Service>) -> AppResult {
+pub fn oauth(
+    oauth_resp: web::Query<OauthQuery>,
+    service: web::Data<app_service::Service>,
+) -> AppResult {
     let redirect_path = service.urls.update_activities().path().to_owned();
     service
         .update_oauth_token(&oauth_resp)

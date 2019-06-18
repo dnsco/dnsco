@@ -32,6 +32,8 @@ pub mod activities_repo {
     use crate::schema::activities;
     use crate::schema::activities::dsl::*;
 
+    use strava::models::activity::Summary as StravaActivity;
+
     pub struct Repo<'a> {
         pub connection: &'a Connection,
     }
@@ -51,5 +53,26 @@ pub mod activities_repo {
                 .set(activity)
                 .execute(self.connection)
         }
+
+        pub fn batch_upsert_from_strava(&self, acts: Vec<StravaActivity>) {
+            //Todo N+1 lol
+            acts.iter().for_each(|a| {
+                let x: NewActivity = a.into();
+                self.upsert(&x);
+            })
+        }
     }
+
+    impl<'a> From<&'a StravaActivity> for NewActivity<'a> {
+        fn from(act: &StravaActivity) -> NewActivity {
+            NewActivity {
+                name: &act.name,
+                description: None, //Todo deal with nullstrings
+                distance: None,    //Todo same
+                remote_athlete_id: act.athlete.id as i32,
+                remote_id: act.id as i32,
+            }
+        }
+    }
+
 }

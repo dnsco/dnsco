@@ -51,10 +51,15 @@ impl Service {
         Ok(string)
     }
 
-    pub fn update_activities(&self) -> Result<impl Template, strava::Error> {
+    pub fn update_activities(&self) -> Result<(), strava::Error> {
+        let connection = self.db.get_connection();
+
+        let repo = activities_repo::Repo {
+            connection: &connection,
+        };
+
         let strava = self.get_strava_api().api()?.activities()?;
-        let template = activities_template::new(strava);
-        Ok(template)
+        Ok(repo.batch_upsert_from_strava(strava))
     }
 
     fn get_strava_api(&self) -> MutexGuard<StravaApi> {
