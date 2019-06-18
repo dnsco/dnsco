@@ -1,6 +1,6 @@
 use crate::errors::{AppError, AppResult};
 use actix_web::HttpResponse;
-use dnsco_service::Template;
+use askama::Template;
 
 pub struct TemplateResponse<T: Template>(T);
 
@@ -18,3 +18,6 @@ impl<T: Template> From<TemplateResponse<T>> for AppResult {
         Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
     }
 }
+
+pub mod activities_template;
+pub mod index_template;

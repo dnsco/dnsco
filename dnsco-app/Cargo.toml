@@ -7,14 +7,16 @@ workspace= ".."
 
 [dependencies]
 actix-web= "^1.0.0"
+askama = "0.8.0"
+chrono = "0.4"
 failure = "0.1.5"
 futures = "0.1.27"
 log = "0.4"
 http = "0.1.17"
+serde = "1"
+serde_json = "1"
 url = "1"
 
-
 dnsco-data = { path="../dnsco-data" }
-dnsco-service = { path="../dnsco-service" }
 strava = { path="../strava" }
 

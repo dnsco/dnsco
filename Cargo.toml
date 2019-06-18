@@ -10,7 +10,6 @@ pretty_env_logger = "0.3"
 
 dnsco-app= { path = "dnsco-app" }
 dnsco-data = { path = "dnsco-data" }
-dnsco-service = { path = "dnsco-service" }
 strava = { path = "strava" }
 
 
@@ -18,6 +17,5 @@ strava = { path = "strava" }
 members = [
   "dnsco-app",
   "dnsco-data",
-  "dnsco-service",
   "strava"
 ]

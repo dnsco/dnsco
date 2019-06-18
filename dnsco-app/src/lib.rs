@@ -1,21 +1,25 @@
 use actix_web::error::BlockingError;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpResponse, HttpServer, ResponseError};
+use askama::Template;
 use log::error;
 
 use std::sync::{Arc, Mutex};
 
 use dnsco_data::{Database, StravaApi};
-use dnsco_service::Webserver;
-use dnsco_service::{config, Template};
+
 use strava::oauth::RedirectQuery as OauthQuery;
 
 mod errors;
 mod templates;
+mod webserver;
 
 use errors::{AppError, AppResult};
 use futures::Future;
 use templates::TemplateResponse;
+use webserver::Service;
+
+pub mod config;
 
 pub fn run(db: Database, strava: StravaApi, urls: config::SiteUrls, port: u16) {
     let database = Arc::new(db);
@@ -24,7 +28,7 @@ pub fn run(db: Database, strava: StravaApi, urls: config::SiteUrls, port: u16) {
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .data(Webserver::new(
+            .data(Service::new(
                 Arc::clone(&database),
                 Arc::clone(&strava_api),
                 urls.clone(),
@@ -43,12 +47,12 @@ pub fn run(db: Database, strava: StravaApi, urls: config::SiteUrls, port: u16) {
     .unwrap();
 }
 
-pub fn index(service: web::Data<Webserver>) -> AppResult {
+pub fn index(service: web::Data<Service>) -> AppResult {
     TemplateResponse::new(service.hello_world()).into()
 }
 
 pub fn activities(
-    service: web::Data<Webserver>,
+    service: web::Data<Service>,
 ) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
     web::block(move || service.activities()).then(|res| match res {
         Ok(acts) => HttpResponse::Ok().body(acts),
@@ -57,7 +61,7 @@ pub fn activities(
 }
 
 pub fn update_activities(
-    service: web::Data<Webserver>,
+    service: web::Data<Service>,
 ) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
     web::block(move || service.update_activities().map_err(AppError::StravaError)).then(|res| {
         match res {
@@ -70,7 +74,7 @@ pub fn update_activities(
     })
 }
 
-pub fn oauth(oauth_resp: web::Query<OauthQuery>, service: web::Data<Webserver>) -> AppResult {
+pub fn oauth(oauth_resp: web::Query<OauthQuery>, service: web::Data<Service>) -> AppResult {
     let redirect_path = service.urls.update_activities().path().to_owned();
     service
         .update_oauth_token(&oauth_resp)

@@ -8,14 +8,14 @@ use strava;
 use crate::{config, templates};
 use templates::{activities_template, index_template};
 
-pub struct Webserver {
+pub struct Service {
     db: Arc<Database>,
     events_repo: EventsRepo,
     strava_api: Arc<Mutex<StravaApi>>,
     pub urls: config::SiteUrls,
 }
 
-impl Webserver {
+impl Service {
     pub fn new(
         db: Arc<Database>,
         strava_api: Arc<Mutex<StravaApi>>,

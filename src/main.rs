@@ -1,7 +1,6 @@
 use std::env;
 
-use dnsco_app::run;
-use dnsco_service::config;
+use dnsco_app::{config, run};
 
 pub fn main() {
     let log_level = env::var("LOG_LEVEL").unwrap_or_else(|_| "INFO".to_owned());
