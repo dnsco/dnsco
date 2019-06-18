@@ -1,4 +1,4 @@
-use actix_web::{HttpResponse, ResponseError};
+use actix_web::HttpResponse;
 use failure::Fail;
 
 pub type AppResult = Result<HttpResponse, AppError>;
@@ -10,20 +10,4 @@ pub enum AppError {
 
     #[fail(display = "Issue Rendering Template: {:?}", _0)]
     TemplateError(#[fail(cause)] Box<Fail>),
-}
-
-impl ResponseError for AppError {
-    fn error_response(&self) -> HttpResponse {
-        match self {
-            AppError::StravaError(strava::Error::NoOauthToken(redirect_url)) => {
-                HttpResponse::Found()
-                    .header(http::header::LOCATION, redirect_url.to_string())
-                    .finish()
-            }
-            e => {
-                dbg!(e);
-                HttpResponse::InternalServerError().body("Something Went Wrong")
-            }
-        }
-    }
 }

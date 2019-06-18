@@ -26,14 +26,14 @@ impl Events {
 pub mod activities_repo {
     use diesel::pg::upsert::*;
     use diesel::prelude::*;
-    use diesel::PgConnection;
 
+    use crate::database::Connection;
     use crate::models::{Activity, NewActivity};
     use crate::schema::activities;
     use crate::schema::activities::dsl::*;
 
     pub struct Repo<'a> {
-        pub connection: &'a PgConnection,
+        pub connection: &'a Connection,
     }
 
     impl<'a> Repo<'a> {

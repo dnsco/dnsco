@@ -1,6 +1,6 @@
 use std::env;
 
-use dnsco_app::factory::run_app;
+use dnsco_app::run;
 use dnsco_service::config;
 
 pub fn main() {
@@ -8,6 +8,9 @@ pub fn main() {
     let rust_log = env::var("RUST_LOG").unwrap_or(log_level);
     env::set_var("RUST_LOG", rust_log);
     pretty_env_logger::init();
+
+    let db_url =
+        env::var("DATABASE_URL").unwrap_or_else(|_| "postgres://dennis@localhost/dnsco".to_owned());
 
     let strava_client_id =
         env::var("STRAVA_CLIENT_ID").expect("Missing the STRAVA_CLIENT_ID environment variable.");
@@ -23,16 +26,17 @@ pub fn main() {
 
     // localhost in host for urls/oauth callbacks, listent to 0.0.0.0 for production
     let host = env::var("HOST").unwrap_or_else(|_| format!("localhost:{}", port));
-    let urls = config::SiteUrls::new(host);
 
+    let site_urls = config::SiteUrls::new(host);
+    let pool = dnsco_data::Database::create(db_url);
     let strava_api = dnsco_data::StravaApi::new(
         strava_access_token,
         strava::oauth::ClientConfig {
             client_id: strava_client_id,
             client_secret: strava_client_secret,
-            redirect_url: urls.oauth_redirect(),
+            redirect_url: site_urls.oauth_redirect(),
         },
     );
 
-    run_app(strava_api, urls, port)
+    run(pool, strava_api, site_urls, port)
 }

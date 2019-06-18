@@ -22,6 +22,10 @@ impl SiteUrls {
         self.base.join("/activities").unwrap()
     }
 
+    pub fn update_activities(&self) -> Url {
+        self.base.join("/update_activities").unwrap()
+    }
+
     pub fn oauth_redirect(&self) -> Url {
         self.base.join("/oauth").unwrap()
     }
