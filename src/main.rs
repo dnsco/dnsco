@@ -21,7 +21,6 @@ pub fn main() {
             .expect("Missing the STRAVA_CLIENT_ID environment variable."),
         strava_client_secret: env::var("STRAVA_CLIENT_SECRET")
             .expect("Missing the STRAVA_CLIENT_SECRET environment variable."),
-        strava_access_token: env::var("STRAVA_OAUTH_TOKEN").ok(),
         port,
         // localhost in host for urls/oauth callbacks, listent to 0.0.0.0 for production
         host: env::var("HOST").unwrap_or_else(|_| format!("localhost:{}", port)),

@@ -1,7 +1,7 @@
 use std::time::UNIX_EPOCH;
 
+use dnsco_data::domains::activities::Repo;
 use dnsco_data::models::NewActivity;
-use dnsco_data::repos::activities_repo::Repo;
 use dnsco_data::Database;
 
 #[test]

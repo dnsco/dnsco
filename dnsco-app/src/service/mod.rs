@@ -2,23 +2,23 @@ pub mod activities;
 pub mod home;
 
 use askama::Template;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::Arc;
 
-use dnsco_data::{repos, Database, DbConnection, EventsRepo, StravaApi};
-use repos::activities_repo;
+use dnsco_data::{ActivitiesRepo, Database, DbConnection, EventsRepo, OauthRepo, StravaApi};
 use strava;
 
-use crate::app::{AppError, SiteUrls};
+use crate::app::SiteUrls;
+use crate::AppError;
 
 pub struct Service {
     db: Arc<Database>,
     events_repo: EventsRepo,
-    strava_api: Arc<Mutex<StravaApi>>,
+    strava_api: Arc<StravaApi>,
     pub urls: SiteUrls,
 }
 
 impl Service {
-    pub fn new(db: Arc<Database>, strava_api: Arc<Mutex<StravaApi>>, urls: SiteUrls) -> Self {
+    pub fn new(db: Arc<Database>, strava_api: Arc<StravaApi>, urls: SiteUrls) -> Self {
         Self {
             db,
             events_repo: EventsRepo {},
@@ -44,10 +44,11 @@ impl Service {
 
     pub fn update_activities(&self) -> Result<(), strava::Error> {
         let connection = self.db.get_connection();
-        let strava_activities = self.get_strava_api().api()?.activities()?;
+        let tokens = self.tokens_repo(&connection);
+        let strava_api = self.strava_api.api(tokens)?;
 
         self.activities_repo(&connection)
-            .batch_upsert_from_strava(strava_activities);
+            .batch_upsert_from_strava(strava_api.activities()?);
 
         Ok(())
     }
@@ -55,18 +56,24 @@ impl Service {
     pub fn update_oauth_token(
         &self,
         oauth_resp: &strava::oauth::RedirectQuery,
-    ) -> Result<strava::oauth::AccessTokenResponse, strava::Error> {
-        let mut strava = self.get_strava_api();
-        let resp = strava.parsed_oauth_response(&oauth_resp)?;
-        strava.set_tokens(&resp);
-        Ok(resp)
+    ) -> Result<(), AppError> {
+        let resp = self
+            .strava_api
+            .parsed_oauth_response(&oauth_resp)
+            .map_err(AppError::StravaError)?;
+        let connection = self.db.get_connection();
+        self.tokens_repo(&connection)
+            .upsert(&resp)
+            .map_err(AppError::QueryError)?;
+
+        Ok(())
     }
 
-    fn activities_repo<'a>(&self, connection: &'a DbConnection) -> activities_repo::Repo<'a> {
-        activities_repo::Repo { connection }
+    fn activities_repo<'a>(&self, connection: &'a DbConnection) -> ActivitiesRepo<'a> {
+        ActivitiesRepo { connection }
     }
 
-    fn get_strava_api(&self) -> MutexGuard<StravaApi> {
-        self.strava_api.lock().unwrap()
+    fn tokens_repo<'a>(&self, connection: &'a DbConnection) -> OauthRepo<'a> {
+        OauthRepo { connection }
     }
 }

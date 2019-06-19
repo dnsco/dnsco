@@ -2,23 +2,22 @@ use actix_web::error::BlockingError;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpResponse, HttpServer, ResponseError};
 use askama::Template;
-use failure::Fail;
 use futures::Future;
 use log::error;
 use url::Url;
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use dnsco_data::{Database, StravaApi};
-use strava::oauth::RedirectQuery as OauthQuery;
+use strava::oauth::{ClientConfig as OauthConfig, RedirectQuery as OauthQuery};
 
 use crate::service::Service;
+use crate::AppError;
 
 pub struct Config {
     pub db_url: String,
     pub strava_client_id: String,
     pub strava_client_secret: String,
-    pub strava_access_token: Option<String>,
     pub port: u16,
     pub host: String,
 }
@@ -26,28 +25,25 @@ pub struct Config {
 pub fn run_config(conf: Config) {
     let site_urls = SiteUrls::new(conf.host);
     let pool = dnsco_data::Database::create(conf.db_url);
-    let strava_api = dnsco_data::StravaApi::new(
-        conf.strava_access_token,
-        strava::oauth::ClientConfig {
-            client_id: conf.strava_client_id,
-            client_secret: conf.strava_client_secret,
-            redirect_url: site_urls.oauth_redirect(),
-        },
-    );
 
-    run(pool, strava_api, site_urls, conf.port)
+    let oauth_config = OauthConfig {
+        client_id: conf.strava_client_id,
+        client_secret: conf.strava_client_secret,
+        redirect_url: site_urls.oauth_redirect(),
+    };
+
+    run(pool, oauth_config, site_urls, conf.port)
 }
 
-pub fn run(db: Database, strava: StravaApi, urls: SiteUrls, port: u16) {
+pub fn run(db: Database, strava: OauthConfig, urls: SiteUrls, port: u16) {
     let database = Arc::new(db);
-    let strava_api = Arc::new(Mutex::new(strava));
-
+    let strava = Arc::new(StravaApi::new(strava));
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .data(Service::new(
                 Arc::clone(&database),
-                Arc::clone(&strava_api),
+                Arc::clone(&strava),
                 urls.clone(),
             ))
             .service(web::resource("/").to(index))
@@ -56,7 +52,7 @@ pub fn run(db: Database, strava: StravaApi, urls: SiteUrls, port: u16) {
                 urls.update_activities().path(),
                 web::get().to_async(update_activities),
             )
-            .service(web::resource(urls.oauth_redirect().path()).to(oauth))
+            .route(urls.oauth_redirect().path(), web::get().to_async(oauth))
     })
     .bind(format!("0.0.0.0:{}", port))
     .unwrap()
@@ -102,29 +98,24 @@ pub fn update_activities(
     })
 }
 
-pub fn oauth(oauth_resp: web::Query<OauthQuery>, service: web::Data<Service>) -> AppResult {
-    let redirect_path = service.urls.update_activities().path().to_owned();
-    service
-        .update_oauth_token(&oauth_resp)
-        .map_err(AppError::StravaError)?;
-    Ok(HttpResponse::Found()
-        .header(http::header::LOCATION, redirect_path)
-        .finish())
+pub fn oauth(
+    oauth_resp: web::Query<OauthQuery>,
+    service: web::Data<Service>,
+) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
+    web::block(move || {
+        let redirect_path = service.urls.update_activities().path().to_owned();
+        service.update_oauth_token(&oauth_resp)?;
+        Ok(redirect_path)
+    })
+    .then(|res| match res {
+        Ok(redirect_path) => HttpResponse::Found()
+            .header(http::header::LOCATION, redirect_path)
+            .finish(),
+        Err(e) => AppError::from(e).error_response(),
+    })
 }
 
 pub type AppResult = Result<HttpResponse, AppError>;
-
-#[derive(Debug, Fail)]
-pub enum AppError {
-    #[fail(display = "Strava Api Returned Error: {:?}", _0)]
-    StravaError(#[fail(cause)] strava::Error),
-
-    #[fail(display = "Issue Rendering Template: {:?}", _0)]
-    TemplateError(#[fail(cause)] Box<Fail>),
-
-    #[fail(display = "Threadpool is gone")]
-    ThreadCanceled,
-}
 
 impl From<BlockingError<AppError>> for AppError {
     fn from(e: BlockingError<AppError>) -> AppError {

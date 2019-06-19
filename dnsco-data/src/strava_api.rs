@@ -1,27 +1,18 @@
+use crate::domains::oauth_tokens::Repo;
 use strava::oauth;
-use strava::oauth::OauthToken;
 
 pub struct StravaApi {
-    oauth_token: Option<OauthToken>,
     oauth_config: oauth::ClientConfig,
 }
 
 impl StravaApi {
-    pub fn new(access_token: Option<String>, oauth_config: oauth::ClientConfig) -> Self {
-        let oauth_token = access_token.map(OauthToken);
-        Self {
-            oauth_config,
-            oauth_token,
-        }
+    pub fn new(oauth_config: oauth::ClientConfig) -> Self {
+        Self { oauth_config }
     }
 
-    pub fn set_tokens(&mut self, resp: &oauth::AccessTokenResponse) {
-        self.oauth_token = Some(OauthToken(resp.oauth_token()));
-    }
-
-    pub fn api(&self) -> Result<strava::Api, strava::Error> {
-        match &self.oauth_token {
-            Some(token) => Ok(strava::Api::new(token.clone())),
+    pub fn api(&self, token_repo: Repo) -> Result<strava::Api, strava::Error> {
+        match token_repo.get().ok() {
+            Some(token) => Ok(strava::Api::new(oauth::OauthToken(token.token))),
             None => Err(strava::Error::NoOauthToken(oauth::get_authorization_url(
                 &self.oauth_config,
             ))),

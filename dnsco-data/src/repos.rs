@@ -23,6 +23,3 @@ impl Events {
         ]
     }
 }
-pub mod activities_repo {
-    pub use crate::domains::activities::Repo;
-}
