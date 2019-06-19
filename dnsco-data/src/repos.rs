@@ -58,7 +58,7 @@ pub mod activities_repo {
             //Todo N+1 lol
             acts.iter().for_each(|a| {
                 let x: NewActivity = a.into();
-                self.upsert(&x);
+                self.upsert(&x).unwrap();
             })
         }
     }

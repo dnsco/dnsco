@@ -5,8 +5,7 @@ use dnsco_data::{repos, Database, DbConnection, EventsRepo, StravaApi};
 use repos::activities_repo;
 use strava;
 
-use crate::activities::ListTemplate;
-use crate::templates::index_template;
+use crate::domains::{activities, home};
 use crate::{config, AppError};
 
 pub struct Service {
@@ -32,14 +31,17 @@ impl Service {
 
     pub fn hello_world(&self) -> impl Template + '_ {
         let events = self.events_repo.events();
-        index_template::new(events, &self.urls)
+        home::IndexTemplate::new(events, &self.urls)
     }
 
-    pub fn activities(&self) -> Result<ListTemplate, AppError> {
+    pub fn activities(&self) -> Result<activities::ListTemplate, AppError> {
         let connection = self.db.get_connection();
         let activities = self.activities_repo(&connection).all();
 
-        Ok(ListTemplate::new(activities, self.urls.update_activities()))
+        Ok(activities::ListTemplate::new(
+            activities,
+            self.urls.update_activities(),
+        ))
     }
 
     pub fn update_activities(&self) -> Result<(), strava::Error> {

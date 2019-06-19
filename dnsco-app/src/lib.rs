@@ -1,7 +1,9 @@
 use actix_web::error::BlockingError;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpResponse, HttpServer, ResponseError};
+use askama::Template;
 use failure::Fail;
+use futures::Future;
 use log::error;
 
 use std::sync::{Arc, Mutex};
@@ -10,14 +12,9 @@ use dnsco_data::{Database, StravaApi};
 use strava::oauth::RedirectQuery as OauthQuery;
 
 mod app_service;
-mod templates;
-
-use futures::Future;
-use templates::TemplateResponse;
 
 pub mod config;
-
-pub mod activities;
+pub mod domains;
 
 pub fn run(db: Database, strava: StravaApi, urls: config::SiteUrls, port: u16) {
     let database = Arc::new(db);
@@ -52,11 +49,19 @@ pub fn index(service: web::Data<app_service::Service>) -> AppResult {
 pub fn activities(
     service: web::Data<app_service::Service>,
 ) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
-    web::block(move || service.activities())
-        .map(|t| -> AppResult { TemplateResponse::new(t).into() })
-        .then(|e| match e {
+    render_template(move || service.activities())
+}
+
+fn render_template<F, T>(f: F) -> impl Future<Item = HttpResponse, Error = actix_web::Error>
+where
+    T: Template + Send + 'static,
+    F: FnOnce() -> Result<T, AppError> + Send + 'static,
+{
+    web::block(f)
+        .map(|t| AppResult::from(TemplateResponse::new(t)))
+        .then(|result| match result {
             Ok(Ok(temp)) => temp,
-            _ => e.into(),
+            err => err.into(),
         })
 }
 
@@ -70,10 +75,7 @@ pub fn update_activities(
             Ok(_) => HttpResponse::Found()
                 .header(http::header::LOCATION, redirect_path)
                 .finish(),
-            Err(e) => match e {
-                BlockingError::Error(ref error) => handle_app_error(error),
-                _ => HttpResponse::InternalServerError().into(),
-            },
+            Err(e) => AppError::from(e).error_response(),
         }
     })
 }
@@ -105,12 +107,6 @@ pub enum AppError {
     ThreadCanceled,
 }
 
-impl ResponseError for AppError {
-    fn error_response(&self) -> HttpResponse {
-        handle_app_error(self)
-    }
-}
-
 impl From<BlockingError<AppError>> for AppError {
     fn from(e: BlockingError<AppError>) -> AppError {
         match e {
@@ -120,14 +116,35 @@ impl From<BlockingError<AppError>> for AppError {
     }
 }
 
-fn handle_app_error(error: &AppError) -> HttpResponse {
-    match error {
-        AppError::StravaError(strava::Error::NoOauthToken(redirect_url)) => HttpResponse::Found()
-            .header(http::header::LOCATION, redirect_url.to_string())
-            .finish(),
-        e => {
-            error!("Unhandled Error: {}", e);
-            HttpResponse::InternalServerError().body("Something Went Wrong")
+impl ResponseError for AppError {
+    fn error_response(&self) -> HttpResponse {
+        match self {
+            AppError::StravaError(strava::Error::NoOauthToken(redirect_url)) => {
+                HttpResponse::Found()
+                    .header(http::header::LOCATION, redirect_url.to_string())
+                    .finish()
+            }
+            e => {
+                error!("Unhandled Error: {}", e);
+                HttpResponse::InternalServerError().body("Something Went Wrong")
+            }
         }
+    }
+}
+
+pub struct TemplateResponse<T: Template>(T);
+
+impl<T: Template> TemplateResponse<T> {
+    pub fn new(template: T) -> Self {
+        TemplateResponse(template)
+    }
+}
+
+impl<T: Template> From<TemplateResponse<T>> for AppResult {
+    fn from(t: TemplateResponse<T>) -> AppResult {
+        let rendered =
+            t.0.render()
+                .map_err(|e| AppError::TemplateError(Box::new(e)))?;
+        Ok(HttpResponse::Ok().content_type("text/html").body(rendered))
     }
 }

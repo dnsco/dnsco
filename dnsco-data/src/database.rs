@@ -1,5 +1,4 @@
 use diesel::pg::PgConnection;
-use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
 
 pub type Connection = r2d2::PooledConnection<ConnectionManager<PgConnection>>;
