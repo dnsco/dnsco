@@ -1,3 +1,6 @@
+pub mod activities;
+pub mod home;
+
 use askama::Template;
 use std::sync::{Arc, Mutex, MutexGuard};
 
@@ -5,22 +8,17 @@ use dnsco_data::{repos, Database, DbConnection, EventsRepo, StravaApi};
 use repos::activities_repo;
 use strava;
 
-use crate::domains::{activities, home};
-use crate::{config, AppError};
+use crate::app::{AppError, SiteUrls};
 
 pub struct Service {
     db: Arc<Database>,
     events_repo: EventsRepo,
     strava_api: Arc<Mutex<StravaApi>>,
-    pub urls: config::SiteUrls,
+    pub urls: SiteUrls,
 }
 
 impl Service {
-    pub fn new(
-        db: Arc<Database>,
-        strava_api: Arc<Mutex<StravaApi>>,
-        urls: config::SiteUrls,
-    ) -> Self {
+    pub fn new(db: Arc<Database>, strava_api: Arc<Mutex<StravaApi>>, urls: SiteUrls) -> Self {
         Self {
             db,
             events_repo: EventsRepo {},
