@@ -11,3 +11,5 @@ pub mod schema;
 pub use database::{Connection as DbConnection, Database};
 pub use repos::Events as EventsRepo;
 pub use strava_api::StravaApi;
+
+mod domains;

@@ -48,6 +48,10 @@ impl AccessTokenResponse {
     pub fn oauth_token(&self) -> String {
         self.access.secret().clone()
     }
+
+    pub fn refresh_token(&self) -> String {
+        self.refresh.secret().clone()
+    }
 }
 
 impl From<OauthResponse> for AccessTokenResponse {

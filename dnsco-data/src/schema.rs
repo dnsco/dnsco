@@ -8,3 +8,17 @@ table! {
         remote_id -> Int4,
     }
 }
+
+table! {
+    oauth_tokens (id) {
+        id -> Int4,
+        token -> Varchar,
+        refresh -> Varchar,
+        remote_athlete_id -> Int4,
+    }
+}
+
+allow_tables_to_appear_in_same_query!(
+    activities,
+    oauth_tokens,
+);
