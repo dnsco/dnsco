@@ -1,9 +1,10 @@
 use diesel::prelude::*;
 
+use strava::oauth::AccessTokenResponse;
+
 use crate::database::Connection;
 use crate::schema::oauth_tokens;
 use crate::schema::oauth_tokens::dsl::*;
-use strava::oauth::AccessTokenResponse;
 
 #[derive(Queryable)]
 pub struct OauthToken {

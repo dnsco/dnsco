@@ -2,14 +2,11 @@ use actix_web::error::BlockingError;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpResponse, HttpServer, ResponseError};
 use askama::Template;
+use dnsco_data::Database;
 use futures::Future;
 use log::error;
-use url::Url;
-
-use std::sync::Arc;
-
-use dnsco_data::{Database, StravaApi};
 use strava::oauth::{ClientConfig as OauthConfig, RedirectQuery as OauthQuery};
+use url::Url;
 
 use crate::service::Service;
 use crate::AppError;
@@ -36,16 +33,12 @@ pub fn run_config(conf: Config) {
 }
 
 pub fn run(db: Database, strava: OauthConfig, urls: SiteUrls, port: u16) {
-    let database = Arc::new(db);
-    let strava = Arc::new(StravaApi::new(strava));
+    let service = web::Data::new(Service::new(db, strava, urls.clone()));
+
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .data(Service::new(
-                Arc::clone(&database),
-                Arc::clone(&strava),
-                urls.clone(),
-            ))
+            .register_data(service.clone())
             .service(web::resource("/").to(index))
             .route(urls.activities().path(), web::get().to_async(activities))
             .route(

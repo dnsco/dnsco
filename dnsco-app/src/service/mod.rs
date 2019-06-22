@@ -2,27 +2,27 @@ pub mod activities;
 pub mod home;
 
 use askama::Template;
-use std::sync::Arc;
 
-use dnsco_data::{ActivitiesRepo, Database, DbConnection, EventsRepo, OauthRepo, StravaApi};
+use dnsco_data::{Database, EventsRepo, RequestContext};
+
 use strava;
 
 use crate::app::SiteUrls;
 use crate::AppError;
 
 pub struct Service {
-    db: Arc<Database>,
+    db: Database,
     events_repo: EventsRepo,
-    strava_api: Arc<StravaApi>,
+    oauth_config: strava::OauthConfig,
     pub urls: SiteUrls,
 }
 
 impl Service {
-    pub fn new(db: Arc<Database>, strava_api: Arc<StravaApi>, urls: SiteUrls) -> Self {
+    pub fn new(db: Database, oauth_config: strava::OauthConfig, urls: SiteUrls) -> Self {
         Self {
             db,
             events_repo: EventsRepo {},
-            strava_api,
+            oauth_config,
             urls,
         }
     }
@@ -33,8 +33,8 @@ impl Service {
     }
 
     pub fn activities(&self) -> Result<activities::ListTemplate, AppError> {
-        let connection = self.db.get_connection();
-        let activities = self.activities_repo(&connection).all();
+        let context = RequestContext::new(&self.db, &self.oauth_config);
+        let activities = context.activities_repo().all();
 
         Ok(activities::ListTemplate::new(
             activities,
@@ -43,11 +43,12 @@ impl Service {
     }
 
     pub fn update_activities(&self) -> Result<(), strava::Error> {
-        let connection = self.db.get_connection();
-        let tokens = self.tokens_repo(&connection);
-        let strava_api = self.strava_api.api(tokens)?;
+        let context = RequestContext::new(&self.db, &self.oauth_config);
 
-        self.activities_repo(&connection)
+        let strava_api = context.strava_api().api()?;
+
+        context
+            .activities_repo()
             .batch_upsert_from_strava(strava_api.activities()?);
 
         Ok(())
@@ -57,23 +58,29 @@ impl Service {
         &self,
         oauth_resp: &strava::oauth::RedirectQuery,
     ) -> Result<(), AppError> {
-        let resp = self
-            .strava_api
-            .parsed_oauth_response(&oauth_resp)
-            .map_err(AppError::StravaError)?;
-        let connection = self.db.get_connection();
-        self.tokens_repo(&connection)
-            .upsert(&resp)
-            .map_err(AppError::QueryError)?;
-
+        let context = RequestContext::new(&self.db, &self.oauth_config);
+        commands::update_from_strava(&context, oauth_resp)?;
         Ok(())
     }
+}
 
-    fn activities_repo<'a>(&self, connection: &'a DbConnection) -> ActivitiesRepo<'a> {
-        ActivitiesRepo { connection }
-    }
+pub mod commands {
+    use crate::AppError;
+    use dnsco_data::RequestContext;
+    use strava::oauth::RedirectQuery;
 
-    fn tokens_repo<'a>(&self, connection: &'a DbConnection) -> OauthRepo<'a> {
-        OauthRepo { connection }
+    pub fn update_from_strava(
+        context: &RequestContext,
+        oauth_resp: &RedirectQuery,
+    ) -> Result<usize, AppError> {
+        let resp = context
+            .strava_api()
+            .parsed_oauth_response(&oauth_resp)
+            .map_err(AppError::StravaError)?;
+
+        context
+            .tokens_repo()
+            .upsert(&resp)
+            .map_err(AppError::QueryError)
     }
 }
