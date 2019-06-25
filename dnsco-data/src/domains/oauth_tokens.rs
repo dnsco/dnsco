@@ -6,6 +6,27 @@ use crate::database::Connection;
 use crate::schema::oauth_tokens;
 use crate::schema::oauth_tokens::dsl::*;
 
+pub mod commands {
+    use crate::{DataError, RequestContext};
+
+    use strava::oauth::RedirectQuery;
+
+    pub fn update_from_strava(
+        context: &RequestContext,
+        oauth_resp: &RedirectQuery,
+    ) -> Result<usize, DataError> {
+        let resp = context
+            .strava_api()
+            .parsed_oauth_response(&oauth_resp)
+            .map_err(DataError::StravaError)?;
+
+        context
+            .tokens_repo()
+            .upsert(&resp)
+            .map_err(DataError::QueryError)
+    }
+}
+
 #[derive(Queryable)]
 pub struct OauthToken {
     pub id: i32,

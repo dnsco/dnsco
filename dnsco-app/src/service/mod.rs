@@ -9,6 +9,7 @@ use strava;
 
 use crate::app::SiteUrls;
 use crate::AppError;
+use dnsco_data::domains::oauth_tokens;
 
 pub struct Service {
     db: Database,
@@ -59,28 +60,7 @@ impl Service {
         oauth_resp: &strava::oauth::RedirectQuery,
     ) -> Result<(), AppError> {
         let context = RequestContext::new(&self.db, &self.oauth_config);
-        commands::update_from_strava(&context, oauth_resp)?;
+        oauth_tokens::commands::update_from_strava(&context, oauth_resp)?;
         Ok(())
-    }
-}
-
-pub mod commands {
-    use crate::AppError;
-    use dnsco_data::RequestContext;
-    use strava::oauth::RedirectQuery;
-
-    pub fn update_from_strava(
-        context: &RequestContext,
-        oauth_resp: &RedirectQuery,
-    ) -> Result<usize, AppError> {
-        let resp = context
-            .strava_api()
-            .parsed_oauth_response(&oauth_resp)
-            .map_err(AppError::StravaError)?;
-
-        context
-            .tokens_repo()
-            .upsert(&resp)
-            .map_err(AppError::QueryError)
     }
 }
