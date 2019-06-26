@@ -7,6 +7,18 @@ use crate::database::Connection;
 use crate::schema::activities;
 use crate::schema::activities::dsl::*;
 
+pub mod commands {
+    use crate::{DataError, RequestContext};
+
+    pub fn update_from_strava(context: RequestContext) -> Result<(), DataError> {
+        let strava_api = context.strava_api().api()?;
+        context
+            .activities_repo()
+            .batch_upsert_from_strava(strava_api.activities()?);
+        Ok(())
+    }
+}
+
 #[derive(Queryable)]
 pub struct Activity {
     pub id: i32,
@@ -38,11 +50,11 @@ impl<'a> Repo<'a> {
     }
 
     pub fn batch_upsert_from_strava(&self, acts: Vec<StravaActivity>) {
-        //Todo N+1 lol
+        //Todo N+1 lol and panic
         acts.iter().for_each(|a| {
             let x: NewActivity = a.into();
             self.upsert(&x).unwrap();
-        })
+        });
     }
 }
 

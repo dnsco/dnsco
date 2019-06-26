@@ -2,11 +2,12 @@ use actix_web::error::BlockingError;
 use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpResponse, HttpServer, ResponseError};
 use askama::Template;
-use dnsco_data::Database;
 use futures::Future;
 use log::error;
 use strava::oauth::{ClientConfig as OauthConfig, RedirectQuery as OauthQuery};
 use url::Url;
+
+use dnsco_data::{DataError, Database};
 
 use crate::service::Service;
 use crate::AppError;
@@ -81,13 +82,11 @@ pub fn update_activities(
 ) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
     let redirect_path = service.urls.activities().path().to_owned();
 
-    web::block(move || service.update_activities().map_err(AppError::StravaError)).then(|res| {
-        match res {
-            Ok(_) => HttpResponse::Found()
-                .header(http::header::LOCATION, redirect_path)
-                .finish(),
-            Err(e) => AppError::from(e).error_response(),
-        }
+    web::block(move || service.update_activities()).then(|res| match res {
+        Ok(_) => HttpResponse::Found()
+            .header(http::header::LOCATION, redirect_path)
+            .finish(),
+        Err(e) => AppError::from(e).error_response(),
     })
 }
 
@@ -122,11 +121,9 @@ impl From<BlockingError<AppError>> for AppError {
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            AppError::StravaError(strava::Error::NoOauthToken(redirect_url)) => {
-                HttpResponse::Found()
-                    .header(http::header::LOCATION, redirect_url.to_string())
-                    .finish()
-            }
+            AppError::DataError(DataError::NotAuthenticated(redirect_url)) => HttpResponse::Found()
+                .header(http::header::LOCATION, redirect_url.to_string())
+                .finish(),
             e => {
                 error!("Unhandled Error: {}", e);
                 HttpResponse::InternalServerError().body("Something Went Wrong")

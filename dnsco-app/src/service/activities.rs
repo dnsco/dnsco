@@ -6,6 +6,7 @@ mod templates {
     //    use chrono::Duration;
     use url::Url;
 
+    use crate::app::SiteUrls;
     use dnsco_data::models::Activity;
 
     #[derive(Template)]
@@ -19,10 +20,10 @@ mod templates {
     // - {{ activity.total_elevation_gain.feet()}} vert
 
     impl ListTemplate {
-        pub fn new(activities: Vec<Activity>, update_url: Url) -> Self {
+        pub fn new(activities: Vec<Activity>, urls: &SiteUrls) -> Self {
             Self {
                 activities: ActivitiesCollection(activities),
-                update_url,
+                update_url: urls.update_activities(),
             }
         }
     }
