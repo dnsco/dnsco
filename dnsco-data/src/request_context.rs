@@ -1,6 +1,6 @@
 use crate::strava_api::StravaApi;
-use crate::{domains, Database, DbConnection};
-use domains::{activities::Repo as ActivitiesRepo, oauth_tokens::Repo as OauthRepo};
+use crate::{models, Database, DbConnection};
+use models::{activities::Repo as ActivitiesRepo, oauth_tokens::Repo as OauthRepo};
 
 pub struct RequestContext<'a> {
     connection: DbConnection,

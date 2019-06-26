@@ -1,7 +1,7 @@
 use askama::Template;
 
-use dnsco_data::domains::{activities, oauth_tokens};
-use dnsco_data::{Database, EventsRepo, RequestContext};
+use dnsco_data::models::{activities, oauth_tokens};
+use dnsco_data::{Database, RequestContext};
 use strava;
 
 use crate::app::SiteUrls;
@@ -9,7 +9,6 @@ use crate::{templates, AppError};
 
 pub struct Service {
     db: Database,
-    events_repo: EventsRepo,
     oauth_config: strava::OauthConfig,
     pub urls: SiteUrls,
 }
@@ -18,15 +17,13 @@ impl Service {
     pub fn new(db: Database, oauth_config: strava::OauthConfig, urls: SiteUrls) -> Self {
         Self {
             db,
-            events_repo: EventsRepo {},
             oauth_config,
             urls,
         }
     }
 
     pub fn hello_world(&self) -> impl Template + '_ {
-        let events = self.events_repo.events();
-        templates::home::Index::new(events, &self.urls)
+        templates::home::Index::new(&self.urls)
     }
 
     pub fn activities(&self) -> Result<templates::activities::List, AppError> {

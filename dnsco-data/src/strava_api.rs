@@ -1,4 +1,4 @@
-use crate::domains::oauth_tokens::Repo;
+use crate::models::oauth_tokens::Repo;
 use strava::oauth;
 
 pub struct StravaApi<'a> {

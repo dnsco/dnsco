@@ -6,8 +6,9 @@ mod templates {
     //    use chrono::Duration;
     use url::Url;
 
+    use dnsco_data::models::activities::Activity;
+
     use crate::app::SiteUrls;
-    use dnsco_data::models::Activity;
 
     #[derive(Template)]
     #[template(path = "activities.html")]
