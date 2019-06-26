@@ -6,15 +6,16 @@ use strava::models::activity::Summary as StravaActivity;
 use crate::database::Connection;
 use crate::schema::activities;
 use crate::schema::activities::dsl::*;
+use crate::{DataError, DataResult};
 
 pub mod commands {
-    use crate::{DataError, RequestContext};
+    use crate::{DataResult, RequestContext};
 
-    pub fn update_from_strava(context: RequestContext) -> Result<(), DataError> {
+    pub fn update_from_strava(context: RequestContext) -> DataResult<()> {
         let strava_api = context.strava_api().api()?;
         context
             .activities_repo()
-            .batch_upsert_from_strava(strava_api.activities()?);
+            .batch_upsert_from_strava(strava_api.activities()?)?;
         Ok(())
     }
 }
@@ -34,11 +35,13 @@ pub struct Repo<'a> {
 }
 
 impl<'a> Repo<'a> {
-    pub fn all(&self) -> Vec<Activity> {
-        activities.load(self.connection).expect("plz")
+    pub fn all(&self) -> DataResult<Vec<Activity>> {
+        activities
+            .load(self.connection)
+            .map_err(DataError::QueryError)
     }
 
-    pub fn upsert(&self, activity: &NewActivity) -> diesel::QueryResult<usize> {
+    pub fn upsert(&self, activity: &NewActivity) -> DataResult<usize> {
         dbg!(diesel::query_builder::AsChangeset::as_changeset(activity));
         dbg!(name.eq(excluded(name)));
         diesel::insert_into(activities::table)
@@ -47,14 +50,20 @@ impl<'a> Repo<'a> {
             .do_update()
             .set(activity)
             .execute(self.connection)
+            .map_err(DataError::QueryError)
     }
 
-    pub fn batch_upsert_from_strava(&self, acts: Vec<StravaActivity>) {
+    pub fn batch_upsert_from_strava(&self, acts: Vec<StravaActivity>) -> DataResult<Vec<usize>> {
         //Todo N+1 lol and panic
-        acts.iter().for_each(|a| {
-            let x: NewActivity = a.into();
-            self.upsert(&x).unwrap();
-        });
+        let all_work: Result<Vec<usize>, _> = acts
+            .iter()
+            .map(|a| {
+                let x: NewActivity = a.into();
+                self.upsert(&x)
+            })
+            .collect();
+
+        all_work.map_err(DataError::from)
     }
 }
 

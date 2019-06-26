@@ -18,7 +18,7 @@ fn test_db() {
         .expect("Time moves forward")
         .as_secs();
 
-    let orig_count = repo.all().len();
+    let orig_count = repo.all().unwrap().len();
     let mut activity = NewActivity {
         name: "Hey",
         description: None,
@@ -28,10 +28,10 @@ fn test_db() {
     };
 
     repo.upsert(&activity).unwrap();
-    assert_eq!(orig_count + 1, repo.all().len());
+    assert_eq!(orig_count + 1, repo.all().unwrap().len());
     activity.description = Some("WHAT");
     repo.upsert(&activity).unwrap();
-    let acts = repo.all();
+    let acts = repo.all().unwrap();
     let new_description = acts
         .iter()
         .find(|a| a.remote_id == 0)

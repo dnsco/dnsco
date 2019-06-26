@@ -1,14 +1,11 @@
-pub mod activities;
-pub mod home;
-
 use askama::Template;
 
-use dnsco_data::{domains, Database, EventsRepo, RequestContext};
-
+use dnsco_data::domains::{activities, oauth_tokens};
+use dnsco_data::{Database, EventsRepo, RequestContext};
 use strava;
 
 use crate::app::SiteUrls;
-use crate::AppError;
+use crate::{templates, AppError};
 
 pub struct Service {
     db: Database,
@@ -29,19 +26,18 @@ impl Service {
 
     pub fn hello_world(&self) -> impl Template + '_ {
         let events = self.events_repo.events();
-        home::IndexTemplate::new(events, &self.urls)
+        templates::home::Index::new(events, &self.urls)
     }
 
-    pub fn activities(&self) -> Result<activities::ListTemplate, AppError> {
+    pub fn activities(&self) -> Result<templates::activities::List, AppError> {
         let context = RequestContext::new(&self.db, &self.oauth_config);
-        let activities = context.activities_repo().all();
-
-        Ok(activities::ListTemplate::new(activities, &self.urls))
+        let activities = context.activities_repo().all()?;
+        Ok(templates::activities::List::new(activities, &self.urls))
     }
 
     pub fn update_activities(&self) -> Result<(), AppError> {
         let context = RequestContext::new(&self.db, &self.oauth_config);
-        domains::activities::commands::update_from_strava(context).map_err(AppError::from)
+        activities::commands::update_from_strava(context).map_err(AppError::from)
     }
 
     pub fn update_oauth_token(
@@ -49,7 +45,7 @@ impl Service {
         oauth_resp: &strava::oauth::RedirectQuery,
     ) -> Result<(), AppError> {
         let context = RequestContext::new(&self.db, &self.oauth_config);
-        domains::oauth_tokens::commands::update_from_strava(&context, oauth_resp)?;
+        oauth_tokens::commands::update_from_strava(&context, oauth_resp)?;
         Ok(())
     }
 }

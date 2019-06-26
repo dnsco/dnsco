@@ -11,7 +11,7 @@ mod strava_api;
 pub mod domains;
 pub mod models;
 
-pub use data_error::DataError;
+pub use data_error::{DataError, DataResult};
 pub use database::{Connection as DbConnection, Database};
 pub use repos::Events as EventsRepo;
 pub use request_context::RequestContext;

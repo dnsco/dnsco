@@ -1,6 +1,7 @@
-pub mod app;
+mod app;
 mod app_error;
-pub mod service;
+mod service;
+mod templates;
 
 pub use app::{run_config, Config};
 pub use app_error::AppError;

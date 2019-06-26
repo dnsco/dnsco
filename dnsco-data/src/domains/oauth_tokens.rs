@@ -5,25 +5,20 @@ use strava::oauth::AccessTokenResponse;
 use crate::database::Connection;
 use crate::schema::oauth_tokens;
 use crate::schema::oauth_tokens::dsl::*;
+use crate::{DataError, DataResult};
 
 pub mod commands {
-    use crate::{DataError, RequestContext};
+    use crate::{DataResult, RequestContext};
 
     use strava::oauth::RedirectQuery;
 
     pub fn update_from_strava(
         context: &RequestContext,
         oauth_resp: &RedirectQuery,
-    ) -> Result<usize, DataError> {
-        let resp = context
-            .strava_api()
-            .parsed_oauth_response(&oauth_resp)
-            .map_err(DataError::StravaError)?;
+    ) -> DataResult<usize> {
+        let resp = context.strava_api().parsed_oauth_response(&oauth_resp)?;
 
-        context
-            .tokens_repo()
-            .upsert(&resp)
-            .map_err(DataError::QueryError)
+        context.tokens_repo().upsert(&resp)
     }
 }
 
@@ -44,7 +39,7 @@ impl<'a> Repo<'a> {
         oauth_tokens.first(self.connection)
     }
 
-    pub fn upsert(&self, resp: &AccessTokenResponse) -> QueryResult<usize> {
+    pub fn upsert(&self, resp: &AccessTokenResponse) -> DataResult<usize> {
         let new_token = NewOauthToken::from(resp);
 
         diesel::insert_into(oauth_tokens::table)
@@ -53,6 +48,7 @@ impl<'a> Repo<'a> {
             .do_update()
             .set(&new_token)
             .execute(self.connection)
+            .map_err(DataError::from)
     }
 }
 

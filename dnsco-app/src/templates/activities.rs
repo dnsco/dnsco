@@ -1,4 +1,4 @@
-pub use templates::ListTemplate;
+pub use templates::List;
 
 mod templates {
     use askama::Template;
@@ -11,7 +11,7 @@ mod templates {
 
     #[derive(Template)]
     #[template(path = "activities.html")]
-    pub struct ListTemplate {
+    pub struct List {
         pub activities: ActivitiesCollection,
         pub update_url: Url,
     }
@@ -19,7 +19,7 @@ mod templates {
     // - {{activity.distance.miles()}}
     // - {{ activity.total_elevation_gain.feet()}} vert
 
-    impl ListTemplate {
+    impl List {
         pub fn new(activities: Vec<Activity>, urls: &SiteUrls) -> Self {
             Self {
                 activities: ActivitiesCollection(activities),
@@ -39,5 +39,4 @@ mod templates {
                 .collect()
         }
     }
-
 }
