@@ -42,8 +42,6 @@ impl<'a> Repo<'a> {
     }
 
     pub fn upsert(&self, activity: &NewActivity) -> DataResult<usize> {
-        dbg!(diesel::query_builder::AsChangeset::as_changeset(activity));
-        dbg!(name.eq(excluded(name)));
         diesel::insert_into(activities::table)
             .values(activity)
             .on_conflict(remote_id)

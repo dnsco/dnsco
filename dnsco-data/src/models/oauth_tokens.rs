@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 
+use chrono::{DateTime, Utc};
 use strava::oauth::AccessTokenResponse;
 
 use crate::database::Connection;
@@ -28,6 +29,7 @@ pub struct OauthToken {
     pub token: String,
     pub refresh: String,
     pub remote_athlete_id: i32,
+    pub expires_at: DateTime<Utc>,
 }
 
 pub struct Repo<'a> {
@@ -58,6 +60,7 @@ pub struct NewOauthToken {
     pub token: String,
     pub refresh: String,
     pub remote_athlete_id: i32,
+    pub expires_at: DateTime<Utc>,
 }
 
 impl<'a> From<&AccessTokenResponse> for NewOauthToken {
@@ -66,6 +69,7 @@ impl<'a> From<&AccessTokenResponse> for NewOauthToken {
             token: resp.oauth_token(),
             refresh: resp.refresh_token(),
             remote_athlete_id: resp.athlete.id as i32,
+            expires_at: resp.expires_at,
         }
     }
 }

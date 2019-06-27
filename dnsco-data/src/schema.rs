@@ -15,6 +15,7 @@ table! {
         token -> Varchar,
         refresh -> Varchar,
         remote_athlete_id -> Int4,
+        expires_at -> Timestamptz,
     }
 }
 

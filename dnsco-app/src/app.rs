@@ -163,9 +163,9 @@ impl SiteUrls {
         }
     }
 
-    pub fn site_url(&self) -> Url {
-        self.base.clone()
-    }
+    //    pub fn site_url(&self) -> Url {
+    //        self.base.clone()
+    //    }
 
     pub fn activities(&self) -> Url {
         self.base.join("/activities").unwrap()

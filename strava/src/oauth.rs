@@ -1,3 +1,4 @@
+use chrono::{DateTime, TimeZone, Utc};
 use oauth2::basic::BasicTokenType;
 use oauth2::prelude::*;
 use oauth2::{
@@ -5,7 +6,6 @@ use oauth2::{
     RedirectUrl, RefreshToken, RequestTokenError, Scope, StandardTokenResponse, TokenResponse,
     TokenUrl,
 };
-
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -42,6 +42,7 @@ pub struct AccessTokenResponse {
     pub access: AccessToken,
     pub athlete: models::athlete::Summary,
     pub refresh: RefreshToken,
+    pub expires_at: DateTime<Utc>,
 }
 
 impl AccessTokenResponse {
@@ -56,10 +57,12 @@ impl AccessTokenResponse {
 
 impl From<OauthResponse> for AccessTokenResponse {
     fn from(resp: OauthResponse) -> Self {
+        let extra = resp.extra_fields().to_owned();
         Self {
             access: resp.access_token().to_owned(),
             refresh: resp.refresh_token().unwrap().to_owned(),
-            athlete: resp.extra_fields().to_owned().athlete,
+            athlete: extra.athlete,
+            expires_at: Utc.timestamp(extra.expires_at, 0),
         }
     }
 }
@@ -95,15 +98,16 @@ fn oauth2_client(oauth_config: &ClientConfig) -> OauthClient {
         .set_auth_type(AuthType::RequestBody)
 }
 
-type OauthResponse = StandardTokenResponse<HasAthlete, BasicTokenType>;
+type OauthResponse = StandardTokenResponse<OauthResponseFields, BasicTokenType>;
 type OauthClient = Client<models::ErrorResponse, OauthResponse, BasicTokenType>;
 
 #[derive(Serialize, Clone, Deserialize, Debug, PartialEq)]
-struct HasAthlete {
+struct OauthResponseFields {
     athlete: models::athlete::Summary,
+    expires_at: i64,
 }
 
-impl oauth2::ExtraTokenFields for HasAthlete {}
+impl oauth2::ExtraTokenFields for OauthResponseFields {}
 
 impl oauth2::ErrorResponseType for models::ErrorResponse {}
 
