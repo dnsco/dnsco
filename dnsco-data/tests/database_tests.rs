@@ -15,7 +15,7 @@ fn test_db() {
     let new_id = std::time::SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time moves forward")
-        .as_secs();
+        .as_secs() as i32;
 
     let orig_count = repo.all().unwrap().len();
     let mut activity = NewActivity {
@@ -23,7 +23,7 @@ fn test_db() {
         description: None,
         distance: Some(9.4),
         remote_athlete_id: 0,
-        remote_id: new_id as i32,
+        remote_id: new_id,
     };
 
     repo.upsert(&activity).unwrap();
@@ -33,7 +33,7 @@ fn test_db() {
     let acts = repo.all().unwrap();
     let new_description = acts
         .iter()
-        .find(|a| a.remote_id == 0)
+        .find(|a| a.remote_id == new_id)
         .unwrap()
         .description
         .as_ref()

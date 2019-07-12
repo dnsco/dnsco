@@ -17,13 +17,13 @@ pub mod commands {
         context: &RequestContext,
         oauth_resp: &RedirectQuery,
     ) -> DataResult<usize> {
-        let resp = context.strava_api().parsed_oauth_response(&oauth_resp)?;
+        let resp = context.strava_api().get_token_from_code(&oauth_resp)?;
 
         context.tokens_repo().upsert(&resp)
     }
 }
 
-#[derive(Queryable)]
+#[derive(Clone, Queryable)]
 pub struct OauthToken {
     pub id: i32,
     pub token: String,
@@ -66,9 +66,9 @@ pub struct NewOauthToken {
 impl<'a> From<&AccessTokenResponse> for NewOauthToken {
     fn from(resp: &AccessTokenResponse) -> Self {
         Self {
-            token: resp.oauth_token(),
-            refresh: resp.refresh_token(),
-            remote_athlete_id: resp.athlete.id as i32,
+            token: resp.access.clone(),
+            refresh: resp.refresh.clone(),
+            remote_athlete_id: resp.athlete.clone().unwrap().id as i32,
             expires_at: resp.expires_at,
         }
     }

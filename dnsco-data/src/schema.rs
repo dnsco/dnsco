@@ -19,7 +19,4 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(
-    activities,
-    oauth_tokens,
-);
+allow_tables_to_appear_in_same_query!(activities, oauth_tokens,);

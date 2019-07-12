@@ -1,6 +1,7 @@
 use crate::strava_api::StravaApi;
 use crate::{models, Database, DbConnection};
 use models::{activities::Repo as ActivitiesRepo, oauth_tokens::Repo as OauthRepo};
+use strava::oauth::StravaOauth;
 
 pub struct RequestContext<'a> {
     connection: DbConnection,
@@ -27,7 +28,7 @@ impl<'a> RequestContext<'a> {
         }
     }
 
-    pub fn strava_api(&self) -> StravaApi {
-        StravaApi::new(self.oauth_config, self.tokens_repo())
+    pub fn strava_api(&self) -> StravaApi<StravaOauth<'a>> {
+        StravaApi::new(self.oauth_config)
     }
 }

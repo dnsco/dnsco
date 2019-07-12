@@ -1,4 +1,3 @@
-use diesel::pg::upsert::*;
 use diesel::prelude::*;
 
 use strava::models::activity::Summary as StravaActivity;
@@ -12,7 +11,8 @@ pub mod commands {
     use crate::{DataResult, RequestContext};
 
     pub fn update_from_strava(context: RequestContext) -> DataResult<()> {
-        let strava_api = context.strava_api().api()?;
+        let token = context.tokens_repo().get().ok();
+        let strava_api = context.strava_api().api(token)?;
         context
             .activities_repo()
             .batch_upsert_from_strava(strava_api.activities()?)?;
