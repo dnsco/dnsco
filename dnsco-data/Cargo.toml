@@ -6,7 +6,7 @@ edition = "2018"
 workspace = ".."
 
 [dependencies]
-diesel = { version = "1.0.0", features = ["chrono", "postgres", "r2d2"] }
+diesel = { version = "1.4.6", features = ["chrono", "postgres", "r2d2"] }
 chrono = "0.4"
 failure = "0.1.5"
 log = "0.4"
